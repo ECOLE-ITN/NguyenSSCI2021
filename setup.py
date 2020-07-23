@@ -9,5 +9,5 @@ setup(
     author='Duc Anh Nguyen',
     author_email='d.a.nguyen[at]liacs.leidenuniv[dot]nl',
     description='Machine learning - Hyperparameter optimisation tool (MIP-EGO4ML upgrade)',
-    install_requires=['pandas', 'numpy', 'scipy', 'scikit-learn', 'joblib', 'dill','BayesOpt']
+    #install_requires=['pandas', 'numpy', 'scipy', 'scikit-learn', 'joblib', 'dill','BayesOpt']
 )
