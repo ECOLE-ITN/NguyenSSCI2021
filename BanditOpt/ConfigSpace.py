@@ -151,9 +151,9 @@ class ConfigSpace(object):
                     tempList.append(aBranch)
             MixList.append(tempList)
         MixList=MixList+norelationLst
-        #MixList
+
         #Forbidden:
-        #1: Forbidden at module level: We change the search space
+        #1: Forbidden at module levels: We change the search space
         #2: Forbidden at node/child/leaves level: check in the sampling function
         listDiffRootForb=OrderedDict()
         if (self._listForbidden!=None):
@@ -295,7 +295,20 @@ class ConfigSpace(object):
                         print(intersectionLeft,intersectionRight)
             """
         return lsFinalSP
-
+    def Combine(self,  Conditional: ConditionalSpace = None, Forbidden: Forbidden = None,isBandit: bool=True, ifAllSolution=True) -> List[SearchSpace]:
+        if (Conditional == None):
+            isBandit=False
+        if(isBandit == True):
+            return self.combinewithconditional(Conditional,Forbidden, ifAllSolution)
+        else:
+            self._listconditional = Conditional
+            self._listForbidden = Forbidden
+            for _,item in self._hyperparameters.items():
+                if 'space' not in locals():
+                    space = item
+                else:
+                    space = space + item
+            return space
     def combinewithconditional(self, cons: ConditionalSpace = None, forb: Forbidden = None, ifAllSolution=True) -> List[SearchSpace]:
         self._listconditional=cons
         self._listForbidden=forb
@@ -343,7 +356,7 @@ class ConfigSpace(object):
                 # print(noCon)
                 if(len(item_noCons)>0):
                     if(len(item_noCons)<2):
-                        lsParentName.append([vName, item_noCons[0]])
+                        lsParentName.append([vName, item_noCons])
                     else:
                         lsParentName.append([vName, list(item_noCons)])
                     #','.join([str(elem) for elem in noCon])
@@ -364,6 +377,7 @@ if __name__ == '__main__':
     alg_name = NominalSpace(['SVM', 'LinearSVC', 'RF', 'DTC', 'KNN', 'Quadratic'], 'alg_name')
     # dataset = NominalSpace( [datasetStr],"dataset")
     cs.add_multiparameter([dataset, alg_name])
+
     ##module1
     ####Missingvalue
     missingvalue = NominalSpace(['imputer', 'fillna','fillNB'], 'missingvalue')
@@ -459,7 +473,7 @@ if __name__ == '__main__':
     forb.addForbidden(strategy,"mean",alg_name,["SVM","DTC"])
     forb.addForbidden(aLeave, ["A","B"], alg_name, "SVM")
     forb.addForbidden(aLeave,["A",'B',"C"],alg_name,"RF")
-    lsSpace = cs.combinewithconditional(con,forb, ifAllSolution=True)
+    lsSpace = cs.combinewithconditional()
     # lsSpace = cs.combinewithconditional(con)
     # print(lsSpace.sampling(10))
     orgDim = len(cs)

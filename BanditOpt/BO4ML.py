@@ -5,7 +5,7 @@ import numpy as np
 from Component.BayesOpt import BayesOpt
 from BanditOpt.ConditionalSpace import ConditionalSpace
 from BanditOpt.ConfigSpace import ConfigSpace
-import Component.BayesOpt.BayesOpt as BO
+import Component.BayesOpt.BayesOpt as MIP
 from Component.BayesOpt.BayesOpt import RandomForest
 from Component.BayesOpt.BayesOpt import ContinuousSpace,OrdinalSpace,NominalSpace,SearchSpace
 from BanditOpt.Forbidden import Forbidden
@@ -16,6 +16,7 @@ class BO4ML(object):
                  conditional: ConditionalSpace = None,
                  forbidden:Forbidden = None,
                  eta=3,
+                 SearchType="Bandit",
                  HPOopitmizer= "BayesOpt",
                  parallel_obj_func=None,
                  ftarget=None,
@@ -52,6 +53,8 @@ class BO4ML(object):
         self.MIP={}
         self.max_eval= max_eval
         #MIP-EGO:parameter
+        if (len(conditional.conditional)<1):
+            conditional=None
         self.MIP['obj_func'] = obj_func
         self.MIP['surrogate'] = surrogate
         self.MIP['parallel_obj_func'] = parallel_obj_func
@@ -81,13 +84,23 @@ class BO4ML(object):
         self.MIP['random_seed'] = random_seed
         self.MIP['logger'] = logger
         self.MIP['forbidden']=forbidden
+        self.MIP['conditional']=conditional
+        self.MIP['hyperparameters']=search_space
         self.orgSearchSpace=search_space
         self.orgConditional=conditional
         self.orgForbidden = forbidden
-        if (conditional==None):
+
+        isBandit=True
+        if (conditional == None or SearchType !="Bandit"):
+            isBandit=False
+        self.isBandit=isBandit
+        self.MIP['isBandit'] =isBandit
+        self.searchspace = search_space.Combine(conditional, forbidden, isBandit)
+        """if (conditional==None):
             self.searchspace = search_space
         else:
             self.searchspace = search_space.combinewithconditional(conditional, forbidden)
+            """
         self.gb_N_value_count = sum([len(search_space._OrgLevels[i]) for i in search_space._OrgLevels])
         self._lsCurrentBest = OrderedDict()
         self._lsOrderdBest = OrderedDict()
@@ -96,21 +109,16 @@ class BO4ML(object):
         self.BO4ML_kwargs = OrderedDict()
 
     def run(self):
-        if (self.orgConditional==None or len(self.orgConditional.conditional)<1):
-            for key, para in self.orgSearchSpace._hyperparameters.items():
-                if 'search_space' not in locals():
-                    search_space = para
-                else:
-                    search_space = search_space + para
-            return self.runBO(search_space)
-        else:
+        if (self.isBandit==True):
             return self.runBO4ML()
-    def runBO(self,search_space):
+        else:
+            return self.runBO(self.searchspace)
+    def runBO(self, search_space):
         self.MIP['sp_id'] =0
         self.MIP['search_space'] = search_space
 
         kwargs = self.MIP
-        BO = BO.BayesOpt(**kwargs)
+        BO = MIP.BayesOpt(**kwargs)
         BO.run()
     def runBO4ML(self):
 
@@ -126,7 +134,7 @@ class BO4ML(object):
             else:
                 kwargs['max_eval']= kwargs['n_init_sample']
             self.BO4ML_kwargs[sp_id] = copy.deepcopy(kwargs)
-            self.opt[sp_id] = BO.BayesOpt(**kwargs)
+            self.opt[sp_id] = MIP.BayesOpt(**kwargs)
             #funcType=type(BO.BayesOpt.pre_eval_check)
             #self.opt[sp_id].pre_eval_check = funcType(ext.check_configuration,self.opt[sp_id],BO.BayesOpt)
             try:
@@ -284,7 +292,9 @@ if __name__ == '__main__':
     X = iris.data
     y = iris.target
 
-
+    def new_obj(params):
+        print(params)
+        return (np.random.uniform(0,1))
     def obj_func(params):
         params = {k: params[k] for k in params if params[k]}
         # print(params)
@@ -301,7 +311,7 @@ if __name__ == '__main__':
         loss = 1 - mean
         # print (mean)
         return loss
-    opt = BO4ML(search_space, obj_func,forbidden=fobr,conditional=con, max_eval=20, verbose=True, n_job=1, n_point=1,
+    opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="BO", max_eval=20, verbose=True, n_job=1, n_point=1,
                 n_init_sample=3)
 
     xopt, fopt, _, eval_count = opt.run()

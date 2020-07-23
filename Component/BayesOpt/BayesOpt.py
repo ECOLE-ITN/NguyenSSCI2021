@@ -38,6 +38,9 @@ class BayesOpt(object):
         if(self.eval_type=="dict"):
             self.BO.run = funcType(ext.BOrun_todict,self.BO)
         self.BO._forbidden=self.forbidden
+        self.BO._conditional=self.conditional
+        self.BO._isBandit=self.isBandit
+        self.BO._hyperparameters=self.hyperparameters
     def run(self, round_id=0):
         sp_id=self.sp_id
 

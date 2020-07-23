@@ -12,5 +12,6 @@ from .ConditionalSpace import ConditionalSpace
 from .ConfigSpace import ConfigSpace
 from .Forbidden import Forbidden
 from Component import BayesOpt
-
+import BanditOpt.ParamExtension as ext
 __all__ = ['BO4ML', 'BayesOpt', 'ConditionalSpace', 'ConfigSpace', 'Forbidden', 'InfillCriteria', 'Surrogate', 'SearchSpace']
+SearchSpace.__init__=ext.init_SearchSpace
