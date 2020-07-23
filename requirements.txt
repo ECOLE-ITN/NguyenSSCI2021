@@ -1,5 +1,6 @@
 numpy
 scipy
 scikit-learn
+git+https://github.com/wangronin/Bayesian-Optimization.git
 
 
