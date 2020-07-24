@@ -1,4 +1,7 @@
-from BanditOpt import BO4ML, ConfigSpace, ConditionalSpace, NominalSpace, OrdinalSpace, ContinuousSpace, Forbidden
+from BanditOpt import ConfigSpace, ConditionalSpace, NominalSpace, OrdinalSpace, ContinuousSpace, Forbidden
+from BanditOpt.BO4ML import BO4ML
+import numpy as np
+
 search_space = ConfigSpace()
 con = ConditionalSpace("test")
 
@@ -509,10 +512,11 @@ myforb.addForbidden(p7,"fast_ica",p2,"multinomial_nb")
 myforb.addForbidden(p7,"kernel_pca",p2,"multinomial_nb")
 myforb.addForbidden(p7,"nystroem_sampler",p2,"multinomial_nb")
 
-cs= search_space.Combine(con, myforb, isBandit=True)
-i=0
-#print(cs.sampling())
-for sp in cs:
-    i+=1
-    print(i)
-    print(sp.sampling())
+
+def new_obj(params):
+    print(params)
+    return (np.random.uniform(0, 1))
+opt = BO4ML(search_space, new_obj,forbidden=myforb,conditional=con,SearchType="Bandit",
+            max_eval=2300, verbose=True, n_job=1, n_point=3,n_init_sample=5)
+xopt, fopt, _, eval_count = opt.run()
+print(fopt)

@@ -182,6 +182,7 @@ def check_configuration(self, X):
         if not any(CON & INT & CAT):
             """d.a.nguyen: add check conditional and forbidden here"""
             isBandit = self._isBandit
+            noChecklst=[]
             if (isBandit == False and self._conditional != None):
                 defaultvalue = {i: x.default for (i, x) in self._hyperparameters._hyperparameters.items()}
                 x, noChecklst = imputation(self._conditional, x, self.var_names, defaultvalue)
