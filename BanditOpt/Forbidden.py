@@ -5,18 +5,22 @@ from typing import List
 from Component.BayesOpt import ContinuousSpace, NominalSpace, OrdinalSpace, SearchSpace
 
 class ForbiddenItem(object):
-    def __init__(self, var_name, left, leftvalue, right, rightvalue, isdiffRoot):
+    def __init__(self, var_name, left, leftvalue, right, rightvalue, add1, add1value, add2, add2value, isdiffRoot):
         self.var_name= var_name
         self.left = left
         self.leftvalue= leftvalue
         self.right=right
         self.rightvalue=rightvalue
+        self.ladd1 = add1
+        self.ladd1value= add1value
+        self.ladd2 = add2
+        self.ladd2value=add2value
         self.isdiffRoot=isdiffRoot
 class Forbidden(object):
     def __init__(self):
         self.forbList = OrderedDict()
 
-    def addForbidden(self, left: SearchSpace = None, leftvalue=None, right: SearchSpace = None, rightvalue=None):
+    def addForbidden(self, left: SearchSpace = None, leftvalue=None, right: SearchSpace = None, rightvalue=None,add1 = None, add1value = None, add2 = None, add2value = None):
         if not isinstance(left, SearchSpace):
             raise TypeError("Hyperparameter '%s' is not an instance of "
                             "mipego.SearchSpace" %
@@ -25,9 +29,9 @@ class Forbidden(object):
             raise TypeError("Hyperparameter '%s' is not an instance of "
                             "mipego.SearchSpace" %
                             str(right))
-        self._addForbidden(left, leftvalue, right, rightvalue)
+        self._addForbidden(left, leftvalue, right, rightvalue,add1, add1value, add2, add2value)
 
-    def _addForbidden(self, left: SearchSpace = None, leftvalue=None, right: SearchSpace = None, rightvalue=None):
+    def _addForbidden(self, left: SearchSpace = None, leftvalue=None, right: SearchSpace = None, rightvalue=None,add1 = None, add1value = None, add2 = None, add2value = None):
         isdiffRoot = False
         if not isinstance(leftvalue, (list, tuple)):
             leftvalue = [leftvalue]
@@ -37,7 +41,7 @@ class Forbidden(object):
         if (var_name in self.forbList):
             self._addLeftvalue(left,leftvalue,right,rightvalue)
         else:
-            self.forbList[var_name] = ForbiddenItem(var_name,left.var_name[0], leftvalue,right.var_name[0], rightvalue, isdiffRoot)
+            self.forbList[var_name] = ForbiddenItem(var_name,left.var_name[0], leftvalue,right.var_name[0], rightvalue, add1, add1value, add2, add2value, isdiffRoot)
     def _addLeftvalue(self,left: SearchSpace = None, leftvalue=None, right: SearchSpace = None, rightvalue=None):
         var_name = str(left.var_name[0]) + '_' + str(right.var_name[0]) + "".join(rightvalue)
         old_value=self.forbList[var_name].leftvalue

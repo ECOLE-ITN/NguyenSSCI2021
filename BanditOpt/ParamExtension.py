@@ -134,12 +134,10 @@ def rebuild(hyperparameter):
 
 
 def imputation(conditional, x, var_names, defaultvalue):
-    lsParentName, childList, lsFinalSP, lsVarNameinCons = [], [], [], []
+    lsParentName, childList, lsFinalSP, noCheckForb = [], [], [], []
     for i, con in conditional.conditional.items():
         if ([con[1], con[2], con[0]] not in lsParentName):
             lsParentName.append([con[1], con[2], con[0]])
-        if (con[1] not in lsVarNameinCons):
-            lsVarNameinCons.append(con[1])
         if (con[0] not in childList):
             childList.append(con[0])
     lsRootNode = [x for x in var_names if x not in childList]
@@ -149,21 +147,23 @@ def imputation(conditional, x, var_names, defaultvalue):
         for node, value in [(x[2], x[1]) for x in lsParentName if x[0] == root and rootvalue not in x[1]]:
             # indextoremove.append(var_names.index(node))
             x[var_names.index(node)] = defaultvalue[node]
+            noCheckForb.append(node)
             nodeChilds = [(x[2], x[1]) for x in lsParentName if x[0] == node]
             while (len(nodeChilds) > 0):
                 for child in nodeChilds:
                     nodeChilds.append([(x[2], x[1]) for x in lsParentName if x[0] == child])
                     # indextoremove.append(var_names.index(node))
                     x[var_names.index(node)] = defaultvalue[node]
-                    nodeChilds.pop(child)
-    return x
+                    noCheckForb.append(node)
+                    nodeChilds.remove(child)
+    return x, noCheckForb
 
 
 def check_configuration(self, X):
     """
             check for the duplicated solutions, as it is not allowed
             for noiseless objective functions
-            2020/7/23: check Forbidden
+            d.a.nguyen: check Forbidden & check conditional
             """
     # X_array=copy.deepcopy(X)
     if not isinstance(X, Solution):
@@ -181,25 +181,44 @@ def check_configuration(self, X):
         CAT = np.all(X[idx][:, self.d_index] == x[self.d_index], axis=1)
         if not any(CON & INT & CAT):
             """d.a.nguyen: add check conditional and forbidden here"""
+            isBandit = self._isBandit
+            if (isBandit == False and self._conditional != None):
+                defaultvalue = {i: x.default for (i, x) in self._hyperparameters._hyperparameters.items()}
+                x, noChecklst = imputation(self._conditional, x, self.var_names, defaultvalue)
+            else:
+                pass
             ##Check Forbidden
+            #noCheckid=[i for (i, v) in enumerate(self.var_names) if v in noChecklst]
+
             x_dict = dict(zip(self.var_names, x))
+            x_dict= dict((i, v) for (i, v) in x_dict.items() if i not in noChecklst)
             isFOB = False
             for fname, fvalue in self._forbidden.forbList.items():
                 hp_left = [(key, value) for (key, value) in x_dict.items() if
                            key == fvalue.left and len(set([value]).intersection(fvalue.leftvalue)) > 0]
                 hp_right = [(key, value) for (key, value) in x_dict.items() if
                             key == fvalue.right and len(set([value]).intersection(fvalue.rightvalue)) > 0]
-                if (len(hp_left) > 0 and len(hp_right) > 0):
-                    isFOB = True
-            isBandit = self._isBandit
-            if (isBandit == False and self._conditional != None):
-                defaultvalue = {i: x.default for (i, x) in self._hyperparameters._hyperparameters.items()}
-                x = imputation(self._conditional, x, self.var_names, defaultvalue)
-            else:
-                pass
+                hp_add1,hp_add2 =[],[]
+                if(fvalue.ladd1 != None):
+                    hp_add1= [(key, value) for (key, value) in x_dict.items() if
+                           key == fvalue.ladd1 and len(set([value]).intersection(fvalue.ladd1value)) > 0]
+                if (fvalue.ladd2 != None):
+                    hp_add2 = [(key, value) for (key, value) in x_dict.items() if
+                               key == fvalue.ladd2 and len(set([value]).intersection(fvalue.ladd2value)) > 0]
+                if (fvalue.ladd1!=None and fvalue.ladd2 != None):
+                    if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1)>0 and len(hp_add2)>0):
+                        isFOB = True
+                elif(fvalue.ladd1!=None):
+                    if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1)>0):
+                        isFOB = True
+                else:
+                    if (len(hp_left) > 0 and len(hp_right) > 0):
+                        isFOB = True
+
             """d.a.nguyen: update X based on conditional ::: end"""
             if (isFOB == False):
                 _ += [i]
+
     return X[_]
 
 

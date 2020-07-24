@@ -180,11 +180,16 @@ class ConfigSpace(object):
         MixList_feasible_remain = []
         if(len(MixList)>1):
             final=list(itertools.product(*MixList))
+            tobedel=[]
             igroup = 0
             for group in final:
                 group_new = list(deepcopy(group))
+                isDelete = False
                 for key, value in listDiffRootForb.items():
                     item_left, item_right=None, None
+                    isBothRoot=False
+                    if((value.left in lsRootNode) and (value.right in lsRootNode)):
+                        isBothRoot=True
                     i=0
                     for module in group_new:
                         hp_left=[(idx,sp) for (idx,sp) in enumerate(module) if sp.var_name[0]==value.left and len(set(sp.bounds[0]).intersection(value.leftvalue))>0]
@@ -195,22 +200,37 @@ class ConfigSpace(object):
                         if(len(hp_right)>0):
                             module_right=i
                             index_right,item_right=hp_right[0]
-                            print(index_right)
+                            #print(index_right)
                         i+=1
                     if (item_left!=None and item_right!=None):
                         sp_bound_left = item_left.bounds[0]
                         sp_bound_left = tuple(set(sp_bound_left) - set(value.leftvalue))
+                        sp_bound_right = item_right.bounds[0]
+                        sp_bound_right_remain = tuple(set(sp_bound_right) - set(value.rightvalue))
+                        if (len(sp_bound_right_remain) < 1 and len(sp_bound_left) < 1 and isBothRoot == True):
+                            isDelete = True
                         if (len(sp_bound_left) > 0):
                             item_left.bounds[0]=sp_bound_left
                             item_left=rebuild(item_left)
                             group_new[module_left][index_left]=item_left
                         else:
-                            left_childs=[ke[0] for ke in self._listconditional.conditional.values() if ke[1]==item_left.var_name[0]]
-                            group_new[module_left].pop(index_left)
-                            if (len(left_childs)>0):
-                                left_child_idx=[idx for (idx,x) in enumerate(group_new[module_left]) if x.var_name[0] in left_childs]
-                                for child in left_child_idx:
-                                    group_new[module_left].pop(child)
+                            if (isDelete==False):
+                                left_childs=[ke[0] for ke in self._listconditional.conditional.values() if ke[1]==item_left.var_name[0]
+                                             and len(set(item_left.bounds[0])-set(ke[2]))==0]
+                                lIndex_del=[index_left]
+                                lChild_del=[]
+                                #group_new[module_left].pop(index_left)
+                                while(len(left_childs)>0):
+                                    for left_child in left_childs:
+                                        left_childs.extend([ke[0] for ke in self._listconditional.conditional.values() if
+                                         ke[1] == left_child])
+                                        lChild_del.append(left_child)
+                                        left_childs.remove(left_child)
+                                lIndex_del.extend([idx for (idx, x) in enumerate(group_new[module_left]) if
+                                                  x.var_name[0] in lChild_del])
+                                for index in sorted(lIndex_del, reverse=True):
+                                    del group_new[module_left][index]
+
                         """sp_bound_right=item_right.bounds[0]
                         sp_bound_right_remain = tuple(set(sp_bound_right)-set(value.rightvalue))
                         ##ADD new module in list
@@ -224,10 +244,15 @@ class ConfigSpace(object):
                             #MixList_feasible_remain.append(group_remain)
                         item_right.bounds[0] = value.rightvalue
                         item_right = rebuild(item_right)"""
-                        group_new[module_right][index_right] = item_right
-                final[igroup]=group_new
+                        #group_new[module_right][index_right] = item_right
+                if (isDelete==False):
+                    final[igroup]=group_new
+                else:
+                    tobedel.append(igroup)
                 #MixList_feasible.append(module)
                 igroup+=1
+            for index in sorted(tobedel, reverse=True):
+                del final[index]
             for searchSpace in final:
                 for group in searchSpace:
                     for item in group:

@@ -119,7 +119,7 @@ class BO4ML(object):
 
         kwargs = self.MIP
         BO = MIP.BayesOpt(**kwargs)
-        BO.run()
+        return BO.run()
     def runBO4ML(self):
 
         for sp in self.searchspace:
@@ -230,7 +230,7 @@ class BO4ML(object):
                                                   reverse=True)).items())[:1]
         best_cdid = lsThisRound[0][0]
         best_incumbent, best_value = self._lsincumbent[best_cdid], self._lsCurrentBest[best_cdid]
-        return best_incumbent, best_value, None, self.eval_count
+        return best_incumbent, best_value, "_", self.eval_count
 
     def mega_stop(self):
         if self.iter_count >= self.max_iter:
@@ -311,8 +311,9 @@ if __name__ == '__main__':
         loss = 1 - mean
         # print (mean)
         return loss
-    opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="BO", max_eval=20, verbose=True, n_job=1, n_point=1,
-                n_init_sample=3)
+    opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="BO", max_eval=10, verbose=True, n_job=1, n_point=1,
+                n_init_sample=5)
 
     xopt, fopt, _, eval_count = opt.run()
     print(fopt)
+
