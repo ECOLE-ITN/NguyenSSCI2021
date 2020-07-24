@@ -58,12 +58,12 @@ def init_SearchSpace(self, bounds, var_name, name, default=None):
     """
     if hasattr(bounds[0], '__iter__') and not isinstance(bounds[0], str):
         self.bounds = [tuple(b) for b in bounds]
-        if(default==None):
-            self.default=bounds[0][0]
+        if (default == None):
+            self.default = bounds[0][0]
     else:
         self.bounds = [tuple(bounds)]
-        if(default==None):
-            self.default=np.mean(bounds)
+        if (default == None):
+            self.default = np.mean(bounds)
 
     self.dim = len(self.bounds)
     self.name = name
@@ -79,6 +79,43 @@ def init_SearchSpace(self, bounds, var_name, name, default=None):
                 var_name = [var_name]
         assert len(var_name) == self.dim
         self.var_name = var_name
+
+
+def init_NominalSpace(self, levels, var_name='d', name=None, default=None):
+    levels = np.atleast_2d(levels)
+    levels = [np.unique(l).tolist() for l in levels]
+
+    super(NominalSpace, self).__init__(levels, var_name, name, default)
+    self.var_type = ['N'] * self.dim
+    self._levels = [np.array(b) for b in self.bounds]
+    self._set_index()
+    self._set_levels()
+
+
+def init_ContinuousSpace(self, bounds, var_name='r', name=None, precision=None, default=None):
+    super(ContinuousSpace, self).__init__(bounds, var_name, name, default)
+    self.var_type = ['C'] * self.dim
+    self._bounds = np.atleast_2d(self.bounds).T
+    self._set_index()
+
+    # set up precisions for each dimension
+    if hasattr(precision, '__iter__'):
+        assert len(precision) == self.dim
+        self.precision = {i: precision[i] \
+                          for i in range(self.dim) if precision[i] is not None}
+    else:
+        if precision is not None:
+            self.precision = {i: precision for i in range(self.dim)}
+
+    assert all(self._bounds[0, :] < self._bounds[1, :])
+
+
+def init_OrdinalSpace(self, bounds, var_name='i', name=None, default = None):
+    super(OrdinalSpace, self).__init__(bounds, var_name, name, default)
+    self.var_type = ['O'] * self.dim
+    self._lb, self._ub = zip(*self.bounds)  # for sampling
+    assert all(np.array(self._lb) < np.array(self._ub))
+    self._set_index()
 
 
 def rebuild(hyperparameter):

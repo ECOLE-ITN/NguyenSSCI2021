@@ -1,4 +1,4 @@
-from BanditOpt.BO4ML import BO4ML, ConfigSpace, ConditionalSpace, NominalSpace, OrdinalSpace, ContinuousSpace, Forbidden
+from BanditOpt import BO4ML, ConfigSpace, ConditionalSpace, NominalSpace, OrdinalSpace, ContinuousSpace, Forbidden
 search_space = ConfigSpace()
 con = ConditionalSpace("test")
 
