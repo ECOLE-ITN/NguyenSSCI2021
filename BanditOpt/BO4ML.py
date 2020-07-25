@@ -86,9 +86,9 @@ class BO4ML(object):
         self.MIP['forbidden']=forbidden
         self.MIP['conditional']=conditional
         self.MIP['hyperparameters']=search_space
-        self.orgSearchSpace=search_space
-        self.orgConditional=conditional
-        self.orgForbidden = forbidden
+        #self.orgSearchSpace=search_space
+        #self.orgConditional=conditional
+        #self.orgForbidden = forbidden
 
         isBandit=True
         if (conditional == None or SearchType !="Bandit"):

@@ -153,12 +153,15 @@ def imputation(conditional, x, var_names, defaultvalue):
             noCheckForb.append(node)
             nodeChilds = [(x[2], x[1]) for x in lsParentName if x[0] == node]
             while (len(nodeChilds) > 0):
-                for child in nodeChilds:
-                    nodeChilds.append([(x[2], x[1]) for x in lsParentName if x[0] == child])
+                childofChild=[]
+                for idx, child in enumerate(nodeChilds):
+                    childofChild.extend([(x[2], x[1]) for x in lsParentName if x[0] == child[0]])
                     # indextoremove.append(var_names.index(node))
                     x[var_names.index(node)] = defaultvalue[node]
                     noCheckForb.append(node)
-                    nodeChilds.remove(child)
+                    del nodeChilds[idx]
+                if(len(childofChild)>0):
+                    nodeChilds=childofChild
     return x, noCheckForb
 
 
