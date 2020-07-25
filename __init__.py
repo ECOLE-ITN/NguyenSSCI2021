@@ -12,7 +12,7 @@ from BanditOpt.ConditionalSpace import ConditionalSpace
 from BanditOpt.ConfigSpace import ConfigSpace
 from BanditOpt.Forbidden import Forbidden
 from Component import BayesOpt
-from Component.BayesOpt.BayesOpt import ContinuousSpace,OrdinalSpace,NominalSpace,SearchSpace
+from Component.BayesOpt import ContinuousSpace,OrdinalSpace,NominalSpace,SearchSpace
 
 __all__ = ['BO4ML', 'BayesOpt', 'ConditionalSpace', 'ConfigSpace', 'Forbidden', 'InfillCriteria',
            'Surrogate', 'SearchSpace', 'ContinuousSpace','OrdinalSpace','NominalSpace']

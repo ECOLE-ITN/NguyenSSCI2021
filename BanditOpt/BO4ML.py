@@ -2,12 +2,12 @@ from collections import OrderedDict
 from math import ceil, floor
 import copy
 import numpy as np
-from Component.BayesOpt import BayesOpt
+from Component.BayesOpt import bayesopt
 from BanditOpt.ConditionalSpace import ConditionalSpace
 from BanditOpt.ConfigSpace import ConfigSpace
-import Component.BayesOpt.BayesOpt as MIP
-from Component.BayesOpt.BayesOpt import RandomForest
-from Component.BayesOpt.BayesOpt import ContinuousSpace,OrdinalSpace,NominalSpace,SearchSpace
+import Component.BayesOpt.bayesopt as MIP
+from Component.BayesOpt import RandomForest
+from Component.BayesOpt import ContinuousSpace,OrdinalSpace,NominalSpace,SearchSpace
 from BanditOpt.Forbidden import Forbidden
 
 class BO4ML(object):

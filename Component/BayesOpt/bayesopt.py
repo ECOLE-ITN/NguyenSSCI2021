@@ -1,7 +1,8 @@
+from __future__ import absolute_import
 from BayesOpt import BO
-from BayesOpt.Surrogate import RandomForest
-from BayesOpt.SearchSpace import ContinuousSpace, NominalSpace, OrdinalSpace, SearchSpace
+from . import RandomForest
 import BanditOpt.ParamExtension as ext
+
 import types
 class BayesOpt(object):
     def __init__(self, **kwargs):

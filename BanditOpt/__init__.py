@@ -13,10 +13,4 @@ from Component import BayesOpt
 from Component.BayesOpt import NominalSpace, ContinuousSpace, OrdinalSpace, SearchSpace
 from Component.BayesOpt import Surrogate, InfillCriteria
 
-
-import BanditOpt.ParamExtension as ext
 __all__ = ['BO4ML', 'BayesOpt', 'ConditionalSpace', 'ConfigSpace', 'NominalSpace', 'ContinuousSpace', 'OrdinalSpace','Forbidden', 'InfillCriteria', 'Surrogate', 'SearchSpace']
-SearchSpace.__init__=ext.init_SearchSpace
-NominalSpace.__init__=ext.init_NominalSpace
-ContinuousSpace.__init__=ext.init_ContinuousSpace
-OrdinalSpace.__init__=ext.init_OrdinalSpace

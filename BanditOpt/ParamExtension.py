@@ -1,4 +1,4 @@
-from Component.BayesOpt import ContinuousSpace, NominalSpace, OrdinalSpace, SearchSpace
+from BayesOpt.SearchSpace import ContinuousSpace, NominalSpace, OrdinalSpace, SearchSpace
 import numpy as np
 import copy
 from BayesOpt.BayesOpt import BO
@@ -60,11 +60,14 @@ def init_SearchSpace(self, bounds, var_name, name, default=None):
         self.bounds = [tuple(b) for b in bounds]
         if (default == None):
             self.default = bounds[0][0]
+        else:
+            self.default = default
     else:
         self.bounds = [tuple(bounds)]
         if (default == None):
             self.default = np.mean(bounds)
-
+        else:
+            self.default = default
     self.dim = len(self.bounds)
     self.name = name
     self.var_type = None
@@ -194,27 +197,28 @@ def check_configuration(self, X):
             x_dict = dict(zip(self.var_names, x))
             x_dict= dict((i, v) for (i, v) in x_dict.items() if i not in noChecklst)
             isFOB = False
-            for fname, fvalue in self._forbidden.forbList.items():
-                hp_left = [(key, value) for (key, value) in x_dict.items() if
-                           key == fvalue.left and len(set([value]).intersection(fvalue.leftvalue)) > 0]
-                hp_right = [(key, value) for (key, value) in x_dict.items() if
-                            key == fvalue.right and len(set([value]).intersection(fvalue.rightvalue)) > 0]
-                hp_add1,hp_add2 =[],[]
-                if(fvalue.ladd1 != None):
-                    hp_add1= [(key, value) for (key, value) in x_dict.items() if
-                           key == fvalue.ladd1 and len(set([value]).intersection(fvalue.ladd1value)) > 0]
-                if (fvalue.ladd2 != None):
-                    hp_add2 = [(key, value) for (key, value) in x_dict.items() if
-                               key == fvalue.ladd2 and len(set([value]).intersection(fvalue.ladd2value)) > 0]
-                if (fvalue.ladd1!=None and fvalue.ladd2 != None):
-                    if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1)>0 and len(hp_add2)>0):
-                        isFOB = True
-                elif(fvalue.ladd1!=None):
-                    if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1)>0):
-                        isFOB = True
-                else:
-                    if (len(hp_left) > 0 and len(hp_right) > 0):
-                        isFOB = True
+            if(self._forbidden!=None):
+                for fname, fvalue in self._forbidden.forbList.items():
+                    hp_left = [(key, value) for (key, value) in x_dict.items() if
+                               key == fvalue.left and len(set([value]).intersection(fvalue.leftvalue)) > 0]
+                    hp_right = [(key, value) for (key, value) in x_dict.items() if
+                                key == fvalue.right and len(set([value]).intersection(fvalue.rightvalue)) > 0]
+                    hp_add1,hp_add2 =[],[]
+                    if(fvalue.ladd1 != None):
+                        hp_add1= [(key, value) for (key, value) in x_dict.items() if
+                               key == fvalue.ladd1 and len(set([value]).intersection(fvalue.ladd1value)) > 0]
+                    if (fvalue.ladd2 != None):
+                        hp_add2 = [(key, value) for (key, value) in x_dict.items() if
+                                   key == fvalue.ladd2 and len(set([value]).intersection(fvalue.ladd2value)) > 0]
+                    if (fvalue.ladd1!=None and fvalue.ladd2 != None):
+                        if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1)>0 and len(hp_add2)>0):
+                            isFOB = True
+                    elif(fvalue.ladd1!=None):
+                        if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1)>0):
+                            isFOB = True
+                    else:
+                        if (len(hp_left) > 0 and len(hp_right) > 0):
+                            isFOB = True
 
             """d.a.nguyen: update X based on conditional ::: end"""
             if (isFOB == False):

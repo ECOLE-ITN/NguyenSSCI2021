@@ -39,7 +39,7 @@ class ConditionalSpace(object):
             parent_value]
     def _addConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None) -> None:
         if not isinstance(parent_value, (list, tuple)):
-            parent_value=list(parent_value)
+            parent_value=list([parent_value])
         keyname = str(child.var_name[0]) + '_' + str(parent.var_name[0])
         self.conditional[keyname] = [child.var_name[0], parent.var_name[0],parent_value]
         #else:
