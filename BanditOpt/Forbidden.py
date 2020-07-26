@@ -43,10 +43,14 @@ class Forbidden(object):
         else:
             if(add1!=None):
                 add1Name=add1.var_name[0]
+                if not isinstance(add1value, (list, tuple)):
+                    add1value = [add1value]
             else:
                 add1Name=None
             if(add2!=None):
                 add2Name=add2.var_name[0]
+                if not isinstance(add2value, (list, tuple)):
+                    add2value = [add2value]
             else:
                 add2Name=None
             self.forbList[var_name] = ForbiddenItem(var_name,left.var_name[0], leftvalue,right.var_name[0], rightvalue,
