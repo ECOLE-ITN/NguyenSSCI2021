@@ -41,7 +41,16 @@ class Forbidden(object):
         if (var_name in self.forbList):
             self._addLeftvalue(left,leftvalue,right,rightvalue)
         else:
-            self.forbList[var_name] = ForbiddenItem(var_name,left.var_name[0], leftvalue,right.var_name[0], rightvalue, add1, add1value, add2, add2value, isdiffRoot)
+            if(add1!=None):
+                add1Name=add1.var_name[0]
+            else:
+                add1Name=None
+            if(add2!=None):
+                add2Name=add2.var_name[0]
+            else:
+                add2Name=None
+            self.forbList[var_name] = ForbiddenItem(var_name,left.var_name[0], leftvalue,right.var_name[0], rightvalue,
+                                                    add1Name, add1value, add2Name, add2value, isdiffRoot)
     def _addLeftvalue(self,left: SearchSpace = None, leftvalue=None, right: SearchSpace = None, rightvalue=None):
         var_name = str(left.var_name[0]) + '_' + str(right.var_name[0]) + "".join(rightvalue)
         old_value=self.forbList[var_name].leftvalue
