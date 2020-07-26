@@ -137,7 +137,7 @@ def rebuild(hyperparameter):
 
 
 def imputation(conditional, x, var_names, defaultvalue):
-    lsParentName, childList, lsFinalSP, noCheckForb = [], [], [], []
+    lsParentName, childList, lsFinalSP,ActiveLst, noCheckForb = [], [], [], [], []
     for i, con in conditional.conditional.items():
         if ([con[1], con[2], con[0]] not in lsParentName):
             lsParentName.append([con[1], con[2], con[0]])
@@ -147,21 +147,24 @@ def imputation(conditional, x, var_names, defaultvalue):
     # indextoremove=[]
     for root in lsRootNode:
         rootvalue = x[var_names.index(root)]
-        for node, value in [(x[2], x[1]) for x in lsParentName if x[0] == root and rootvalue not in x[1]]:
-            # indextoremove.append(var_names.index(node))
-            x[var_names.index(node)] = defaultvalue[node]
-            noCheckForb.append(node)
-            nodeChilds = [(x[2], x[1]) for x in lsParentName if x[0] == node]
+        ActiveLst.append(root)
+        for node, value in [(x[2], x[1]) for x in lsParentName if x[0] == root and rootvalue in x[1]]:
+            value = x[var_names.index(node)]
+            ActiveLst.append(node)
+            nodeChilds = [(x[2], x[1]) for x in lsParentName if x[0] == node and value in x[1]]
             while (len(nodeChilds) > 0):
-                childofChild=[]
+                childofChild = []
                 for idx, child in enumerate(nodeChilds):
-                    childofChild.extend([(x[2], x[1]) for x in lsParentName if x[0] == child[0]])
-                    # indextoremove.append(var_names.index(node))
-                    x[var_names.index(child[0])] = defaultvalue[child[0]]
-                    noCheckForb.append(node)
+                    childvalue = x[var_names.index(child[0])]
+                    childofChild.extend([(x[2], x[1]) for x in lsParentName if x[0] == child[0] and childvalue in x[1]])
+                    ActiveLst.append(child[0])
                     del nodeChilds[idx]
-                if(len(childofChild)>0):
-                    nodeChilds=childofChild
+                if (len(childofChild) > 0):
+                    nodeChilds = childofChild
+    noCheckForb =[x for x in var_names if x not in ActiveLst]
+    for node in noCheckForb:
+        x[var_names.index(node)] = defaultvalue[node]
+
     return x, noCheckForb
 
 
@@ -178,6 +181,7 @@ def check_configuration(self, X):
     if hasattr(self, 'data'):
         X = X + self.data
     _ = []
+    defaultvalue = {i: x.default for (i, x) in self._hyperparameters._hyperparameters.items()}
     for i in range(N):
         x = X[i]
         idx = np.arange(len(X)) != i
@@ -190,13 +194,11 @@ def check_configuration(self, X):
             isBandit = self._isBandit
             noChecklst=[]
             if (isBandit == False and self._conditional != None):
-                defaultvalue = {i: x.default for (i, x) in self._hyperparameters._hyperparameters.items()}
                 x, noChecklst = imputation(self._conditional, x, self.var_names, defaultvalue)
             else:
                 pass
             ##Check Forbidden
             #noCheckid=[i for (i, v) in enumerate(self.var_names) if v in noChecklst]
-
             x_dict = dict(zip(self.var_names, x))
             x_dict= dict((i, v) for (i, v) in x_dict.items() if i not in noChecklst)
             isFOB = False
