@@ -503,28 +503,30 @@ class ConfigSpace(object):
                 igroup+=1
             for index in sorted(tobedel, reverse=True):
                 del final[index]
-            final=self._clustering(final)
-            for group in final:
-                for _,item in group.items():
-                    if (item.iskeep == True):
-                        #FinalSP[item.var_name[0]] = item
-                        if 'space' not in locals():
-                            space = item
-                        else:
-                            space = space + item
-                lsFinalSP.append(space)
-                del space
-            """for searchSpace in final:
-                for group in searchSpace:
-                    for item in group:
+            if (len(final)>30):
+                final=self._clustering(final)
+                for group in final:
+                    for _,item in group.items():
                         if (item.iskeep == True):
-                            FinalSP[item.var_name[0]] = item
+                            #FinalSP[item.var_name[0]] = item
                             if 'space' not in locals():
                                 space = item
                             else:
                                 space = space + item
-                lsFinalSP.append(space)
-                del space"""
+                    lsFinalSP.append(space)
+                    del space
+            else:
+                for searchSpace in final:
+                    for group in searchSpace:
+                        for item in group:
+                            if (item.iskeep == True):
+                                FinalSP[item.var_name[0]] = item
+                                if 'space' not in locals():
+                                    space = item
+                                else:
+                                    space = space + item
+                    lsFinalSP.append(space)
+                    del space
         elif(len(MixList)==1):
             final=list(MixList)
             for searchSpace in final:

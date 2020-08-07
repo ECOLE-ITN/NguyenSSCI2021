@@ -58,7 +58,7 @@ def obj_func(params):
 
 
 opt = BO4ML(search_space, obj_func, conditional=con,forbidden=forb, max_eval=20, verbose=True, n_job=1, n_point=1,
-            n_init_sample=3,SearchType="BO")
+            n_init_sample=3,SearchType="Bandit")
 
 xopt, fopt, _, eval_count = opt.run()
 print(fopt)
