@@ -335,16 +335,20 @@ class ConfigSpace(object):
         df=pd.DataFrame(df,columns=header1)
         dfReturn=pd.DataFrame(df['id'])
         for col in header:
-            alst=dict()
-            dff = pd.DataFrame()
+
+            #dff = pd.DataFrame()
+            dff=[]
             for idx,x in enumerate(df[col]):
+                alst = dict()
                 alst['idx']=idx
                 if (isinstance(x,tuple) or isinstance(x,list)):
                     for i in x:
                         alst[col+"_"+str(i)]=1
-                dff=dff.append(alst, ignore_index=True)
+                dff.append(alst)
+                #dff=dff.append(alst, ignore_index=True)
+            #dff = pd.DataFrame(dff)
             #dfReturn = pd.concat([dfReturn[:], dff[:]], axis=1)
-            dfReturn=dfReturn.join(dff.set_index('idx'),on='id')
+            dfReturn=dfReturn.join(pd.DataFrame(dff).set_index('idx'),on='id')
         dfReturn = dfReturn.fillna(0)
         ncluster=30
         complete = AgglomerativeClustering(n_clusters=ncluster, linkage='complete')

@@ -162,6 +162,7 @@ def formatCandidate(self, data):
                     childofChild.extend([(x[2], x[1]) for x in lsParentName if x[0] == child[0] and childvalue in x[1]])
                     ActiveLst.append(child[0])
                     # del nodeChilds[idx]
+                nodeChilds.clear()
                 if (len(childofChild) > 0):
                     nodeChilds = childofChild
     newX = data
@@ -197,6 +198,7 @@ def imputation(conditional, x, var_names, defaultvalue):
                     childofChild.extend([(x[2], x[1]) for x in lsParentName if x[0] == child[0] and childvalue in x[1]])
                     ActiveLst.append(child[0])
                     #del nodeChilds[idx]
+                nodeChilds.clear()
                 if (len(childofChild) > 0):
                     nodeChilds = childofChild
     noCheckForb = [x for x in var_names if x not in ActiveLst]
