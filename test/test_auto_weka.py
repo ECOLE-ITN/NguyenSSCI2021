@@ -210,7 +210,10 @@ myforb.addForbidden(p2,"decision_tree",p7,"kernel_pca")
 def new_obj(params):
     print(params)
     return (np.random.uniform(0, 1))
-opt = BO4ML(search_space, new_obj,forbidden=myforb,conditional=con,SearchType="BO",
+#ls = search_space.Combine(Conditional=con, Forbidden=myforb)
+#print(len(ls))
+
+opt = BO4ML(search_space, new_obj,forbidden=myforb,conditional=con,SearchType="Bandit",
             max_eval=2300, verbose=True, n_job=1, n_point=3,n_init_sample=5)
 xopt, fopt, _, eval_count = opt.run()
 print(fopt)

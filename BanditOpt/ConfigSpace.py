@@ -3,12 +3,15 @@ from copy import deepcopy
 from collections import OrderedDict
 from typing import Union, List, Dict, Optional
 from numpy.random import randint
-import itertools
+import itertools, collections
 import numpy as np
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder,MultiLabelBinarizer
 #import mipego4ml.ConditionalSpace
 from BanditOpt.Forbidden import Forbidden
 from BanditOpt.ConditionalSpace import ConditionalSpace
 from BanditOpt.ParamExtension import rebuild
+from sklearn.cluster import AgglomerativeClustering
 # from .mipego.SearchSpace import ContinuousSpace, NominalSpace, OrdinalSpace, SearchSpace
 from Component.BayesOpt import ContinuousSpace, NominalSpace, OrdinalSpace, SearchSpace
 
@@ -62,65 +65,312 @@ class ConfigSpace(object):
                 var_name = np.r_[var_name, np.array([hp])]
             self._hyperparameter_idx[hp] = i
         self.var_name = np.array([str(var_name)])
+    def _getnodechilds(self,node,childeffect,lsvarname,lsparentname):
+        if (isinstance(self._hyperparameters[node[0]], NominalSpace)==False):
+            return [],[]
+        child_hpa = [x[1] for x in childeffect if (x[0] == (node[0] + "_" + "".join(str(e) for e in node[1])))]
+        n_child=len(child_hpa)
+        child_node=[]
+        if (n_child > 0):
+            icount = 0
+            #child_node = []
+            for child_hpa_i in child_hpa:
+                icount += 1
+                if (child_hpa_i in lsvarname):
+                    childlst=[x for x in lsparentname if x[0] == child_hpa_i]
+                    child_node.extend(childlst)
+                else:
+                    childlst=[child_hpa_i,list(self._hyperparameters[child_hpa_i].bounds[0])]
+                    child_node.append(childlst)
+                    #childlst=[x for x in self._listconditional.conditional.values() if
+                                        #x[0] == child_hpa_i and x[2] == node[1]]
 
-    def _listoutsinglebraches(self, rootnode, rootname, hpi, final, lsvarname, childeffect, lsparentname):
-        i = rootnode
+        return child_hpa,child_node
+    def _listoutallnode(self, node, rootname, lsvarname, childeffect,
+                               lsparentname, mixlist,feeded):
+        temp = deepcopy(self._hyperparameters[node[0]])
+        if(temp.var_name[0] not in feeded):
+            feeded.append(temp.var_name[0])
+        if (isinstance(node[1], tuple)):
+            temp.bounds = [node[1]]
+        else:
+            temp.bounds = [tuple(node[1])]
+        temp.iskeep = False
+        temp = rebuild(temp)
+        this_node = [temp]
+        if (isinstance(temp, NominalSpace)):
+            child_hpa, child_nodes = self._getnodechilds(node, childeffect, lsvarname, lsparentname)
+        else:
+            child_hpa, child_nodes =[],[]
+        if(len(child_nodes)>0):
+            for child in child_nodes:
+                child_node=self._listoutallnode(child,rootname,lsvarname, childeffect,
+                               lsparentname, mixlist,feeded)
+                this_node.extend(child_node)
+        if(node[0]==rootname):
+            mixlist.extend(this_node)
+        return this_node
+    def _listoutBranches4(self,node, rootname, lsvarname, childeffect,
+                               lsparentname):
+        mixlist,feeded,ActiveLst=[],[],[]
+        _ = self._listoutallnode(node, rootname, lsvarname, childeffect,
+                               lsparentname, mixlist,feeded )
+        final_lst=[]
+        #set_unique=set([x.var_name for x in mixlist])
+        for x in feeded:
+            temp = []
+            for item in [s for s in mixlist if s.var_name[0] == x]:
+                temp.append(item)
+            final_lst.append(temp)
+        final=list(itertools.product(*final_lst))
+        root = node[0]
+        rootvalue=node[1]
+        ActiveLst.append(node)
+        lsParentName, childList=[],[]
+        for i, con in self._listconditional.conditional.items():
+            if ([con[1], con[2], con[0]] not in lsParentName):
+                lsParentName.append([con[1], con[2], con[0]])
+            if (con[0] not in childList):
+                childList.append(con[0])
+        finalA=dict()
+        for sp in final:
+            sp=deepcopy(sp)
+            childs = [(x[2], x[1]) for x in lsParentName if x[0] == root and len(set(rootvalue).intersection(x[1])) > 0]
+            """for item in sp:
+                if(item.var_name[0]==root):
+                    item.iskeep=True
+                    break"""
+            rootnode = [x for x in sp if x.iskeep == False and x.var_name[0] == root][0]
+            rootnode.iskeep=True
+            while (len(childs)>0):
+                childofChild=[]
+                for child in childs:
+                    item= [x for x in sp if x.iskeep==False and x.var_name[0]==child[0]][0]
+                    childvalue=list(item.bounds[0])
+                    #if (item.var_name[0]==child[0] and len(set(child[1]).intersection(set(item.bounds[0]))) > 0):
+                    item.iskeep=True
+                    #childvalue = item.bounds
+                    childofChild.extend([(x[2], x[1]) for x in lsParentName if x[0] == child[0] and len(set(childvalue).intersection(set(x[1])))>0])
+                    #del childs[idx]
+                    #break
+                childs.clear()
+                if(len(childofChild)>0):
+                    childs=childofChild
+            temp = [x for x in sp if x.iskeep==True]
+            ##remove duplicate
+            temp_id="id_"
+            for i in temp:
+                if (isinstance(i,NominalSpace)):
+                    temp_id=temp_id+i.var_name[0]+"_"+"_".join(str(e) for e in list(i.bounds[0]))
+                else:
+                    temp_id = temp_id + i.var_name[0]
+            finalA[temp_id]=temp
+        finalA=[x for x in finalA.values()]
+
+        return finalA
+    def _listoutsinglebraches3(self, node, rootname, hpi, final, lsvarname, childeffect,
+                               lsparentname, pathLen, mixlist):
+        temp = deepcopy(self._hyperparameters[node[0]])
+        temp.iskeep = True
+        child_hpa, child_nodes =self._getnodechilds(node,childeffect,lsvarname,lsparentname)
+        if (len(child_nodes)>0):
+            for hpa in child_hpa:
+                hpa_childs= [x[1] for x in child_nodes if x[0]==hpa]
+                for childs in hpa_childs:
+                    for child in childs:
+                        node1=[hpa,child]
+                        node_value= self._listoutsinglebraches3(node1, rootname, hpi, final, lsvarname, childeffect,
+                               lsparentname, pathLen, mixlist)
+                        mixlist.append(node_value)
+
+        return temp
+
+    def _listoutsinglebraches2(self, node,rootname, hpi, final, lsvarname, childeffect,
+                              lsparentname, pathLen,mixlist):
+        final = final
+        temp = deepcopy(self._hyperparameters[node[0]])
+        temp.iskeep = True
+        #hpi["_".join(node[0])] = temp
+        mixlist.append(node)
+        if(node in hpi.keys()):
+            hpi[node]=temp
+        else:
+            hpi.append(temp)
+        pathLen+=1
+        if (node[0] in lsvarname):
+            ##Add to temporary list
+            if (isinstance(node[1], tuple)):
+                temp.bounds = [node[1]]
+            else:
+                temp.bounds = [tuple(node[1])]
+            temp = rebuild(temp)
+            ##Check if the current node has children
+            child_hpa = [x[1] for x in childeffect if (x[0] == (node[0] + "_" + "".join(node[1])))]
+            child_node = []
+            n_child= len(child_hpa)
+            #IF the current node has childs, we list out its childs
+            if (n_child > 0):
+                icount=0
+                for child_hpa_i in child_hpa:
+                    child_node = []
+                    icount+=1
+                    if (child_hpa_i in lsvarname):
+                        child_node.extend([[x for x in lsparentname if x[0] == child_hpa_i]])
+                    else:
+                        child_node.extend([[x for x in self._listconditional.conditional.values() if x[0] == child_hpa_i and x[2] == node[1]]])
+                    for child_id, child in enumerate(child_node):
+                        hpb= self._listoutsinglebraches2(child, rootname,hpi, final, lsvarname, childeffect, lsparentname,
+                                                          pathLen)
+            if(node[0]==rootname):
+                icount=0
+                tempList = []
+
+                for key,value in hpi.items():
+                    if(icount<=pathLen):
+                        thisNode = deepcopy(value)
+                        tempList.append(thisNode)
+                    icount+=1
+                final.append(deepcopy(tempList))
+            #else:
+                #final.append(deepcopy(hpi[0:pathLen]))
+        else:
+            temp=rebuild(temp)
+            #hpi.append(temp)
+            #pass
+            #final.append(deepcopy(hpi[0:pathLen]))
+        #return hpi
+
+    def _listoutsinglebraches(self, node, rootname, hpi, final, lsvarname, childeffect,
+                              lsparentname,nodeAfterRoot):
         hp = deepcopy(self._hyperparameters)
         name = rootname
         final = final
+        #afterRoot = [x[1] for x in childeffect if (x[0] == (rootname + "_" + "".join(node[1])))]
         # print(i)
-        if (i[0] in lsvarname):
-            #hpa = [(hp1[0], i[1], True) for hp1 in hp if (hp1[0] == i[0])]
-            temp= hp[i[0]]
-            if(isinstance(i[1], tuple)):
-                temp.bounds = [i[1]]
+        if (node[0] in lsvarname):
+            temp= hp[node[0]]
+            if(isinstance(node[1], tuple)):
+                temp.bounds = [node[1]]
             else:
-                temp.bounds = [tuple(i[1])]
+                temp.bounds = [tuple(node[1])]
             temp.iskeep = True
-            #temp.rebuild()
             temp= rebuild(temp)
+            ##Add to temporary list
             hpa=[temp]
-            child_hpa = [x[1] for x in childeffect if (x[0] == (i[0] + "_" + "".join(i[1])))]
-
+            ##Check if the current node has children
+            child_hpa = [x[1] for x in childeffect if (x[0] == (node[0] + "_" + "".join(node[1])))]
             child_node = []
-
-            if (len(child_hpa) > 0):
-                if (child_hpa[0] in lsvarname):
-                    child_node = [x for x in lsparentname if x[0] in child_hpa]
-                else:
-                    child_node = [x for x in self._listconditional.conditional.values() if x[0] in child_hpa and x[2] == i[1]]
-            else:
-                hpi = hpa
-                if (i[0] == name):
+            n_child= len(child_hpa)
+            #IF the current node has childs, we list out its childs
+            if (n_child > 0):
+                for child_hpa_i in child_hpa:
+                    if (child_hpa_i in lsvarname):
+                        child_node.extend([x for x in lsparentname if x[0] == child_hpa_i])
+                    else:
+                        child_node.extend([x for x in self._listconditional.conditional.values() if x[0] == child_hpa_i and x[2] == node[1]])
+            elif(n_child==0):
+                #if the current node has no child, we add it into the major list
+                hpi.extend(hpa)
+                if (node[0] == name):
                     final.append(hpi)
-            if (len(child_hpa) < 2):
-                while (len(child_node) > 0):
+                    return hpi
+            #If the case: the current node has only 1 child
+            if (n_child ==1):
+                while (len(child_node)>0):
                     child = child_node[0]
-                    i3 = child
-                    hpi = self._listoutsinglebraches(i3, name, hpi, final, lsvarname, childeffect, lsparentname)
-                    hpi = hpa + hpi
+                    if (child in (nodeAfterRoot)):
+                        hpi.clear()
+                    hpi = self._listoutsinglebraches(child, name, hpi, final, lsvarname, childeffect, lsparentname, nodeAfterRoot)
+                    hpi.extend(hpa)
                     child_node.remove(child)
-                    if (i[0] == name):
+                    if (child in (nodeAfterRoot)):
                         final.append(hpi)
-            else:
+                        return hpi
+            elif(n_child>1):
                 count = 1
-                numberChild = len(child_node)
+                temp_hpi=[]
                 for child in child_node:
-                    i3 = child
-                    hpi = self._listoutsinglebraches(i3, name, hpi, final, lsvarname, childeffect, lsparentname)
+                    hpi = self._listoutsinglebraches(child, name, hpi, final, lsvarname, childeffect, lsparentname, nodeAfterRoot)
+                    temp_hpi.append([child, name, hpi])
                     count = count + 1
-                    if (count < 2 or count > numberChild):
+                    ##TO DO: BUG
+                    if (count > n_child):
                         hpi = hpa + hpi
-                if (i[0] == name):
+                if (node[0] == name):
                     final.append(hpi)
         else:
-            temp = hp[i[0]]
+            temp = hp[node[0]]
             temp.iskeep = True
             temp=rebuild(temp)
             #hpchild = [temp]
             hpi.append(temp)
         return hpi
+    def _clustering(self,final):
 
+        header=[x.var_name[0] for x in self._hyperparameters.values() if isinstance(x,NominalSpace)]
+        notcount=[x.var_name[0] for x in self._hyperparameters.values() if isinstance(x,NominalSpace)==False]
+        le = LabelEncoder()
+        LstEnc = dict()
+        for i in header:
+            item = self._hyperparameters[i]
+            le.fit(item.bounds[0])
+            LstEnc[i] = le.classes_
+        df=[]
+        for idx,sp in enumerate(final):
+            itemarr= [idx]
+            for item in header:
+                try:
+                    #i = sp[item]
+                    i=[x for sublist in sp for x in sublist if x.var_name[0] == item][0]
+                    ivalue=i.bounds[0]
+                    #le.classes_ = LstEnc[item]
+                    #ivalue=le.transform(ivalue2)
+                except:
+                    ivalue=None
+                itemarr.append(ivalue)
+            df.append(itemarr)
+        header1 = ["id"]
+        header1.extend(header)
+
+        df=pd.DataFrame(df,columns=header1)
+        dfReturn=pd.DataFrame(df['id'])
+        for col in header:
+            alst=dict()
+            dff = pd.DataFrame()
+            for idx,x in enumerate(df[col]):
+                alst['idx']=idx
+                if (isinstance(x,tuple) or isinstance(x,list)):
+                    for i in x:
+                        alst[col+"_"+str(i)]=1
+                dff=dff.append(alst, ignore_index=True)
+            #dfReturn = pd.concat([dfReturn[:], dff[:]], axis=1)
+            dfReturn=dfReturn.join(dff.set_index('idx'),on='id')
+        dfReturn = dfReturn.fillna(0)
+        ncluster=30
+        complete = AgglomerativeClustering(n_clusters=ncluster, linkage='complete')
+        # Fit & predict
+            # Make AgglomerativeClustering fit the dataset and predict the cluster labels
+        complete_pred = complete.fit_predict(dfReturn)
+        lsReturn=[]
+        for idx, i in enumerate(complete_pred):
+            lsReturn.append([i,final[idx]])
+        newFinal=[]
+        for i in range(ncluster):
+            temp=dict()
+            for sp in [x[1] for x in lsReturn if x[0]==i]:
+                for x in [x for sublist in sp for x in sublist]:
+                    if (x.var_name[0] in temp.keys()):
+                        lastvalue=temp[x.var_name[0]].bounds[0]
+                        thisvalue=x.bounds[0]
+                        diff= tuple(set(thisvalue)-set(lastvalue))
+                        if(len(diff)>0):
+                            temp[x.var_name[0]].bounds[0]=lastvalue+diff
+                    else:
+                        temp[x.var_name[0]]=x
+            for _,x in temp.items():
+                x=rebuild(x)
+            newFinal.append(temp)
+        return newFinal
     def listoutAllBranches(self, lsvarname, childeffect, lsparentname) -> List[SearchSpace]:
         #hp = copy.deepcopy(self._hyperparameters)
         hp=self._hyperparameters
@@ -137,8 +387,8 @@ class ConfigSpace(object):
         # print(hpa)
         for root in lsRootNode:
             for item in [x for x in lsparentname if x[0] == root]:
-                temp_hpi=[]
-                temp_hpi = self._listoutsinglebraches(item, item[0], temp_hpi, lsBranches, lsvarname, childeffect, lsparentname)
+                finalA=self._listoutBranches4(item,root,lsvarname, childeffect, lsparentname)
+                lsBranches.extend(finalA)
         count,final, MixList = 1,[],[]
         for root in lsRootNode:
             tempList=[]
@@ -253,7 +503,18 @@ class ConfigSpace(object):
                 igroup+=1
             for index in sorted(tobedel, reverse=True):
                 del final[index]
-            for searchSpace in final:
+            final=self._clustering(final)
+            for group in final:
+                for _,item in group.items():
+                    if (item.iskeep == True):
+                        #FinalSP[item.var_name[0]] = item
+                        if 'space' not in locals():
+                            space = item
+                        else:
+                            space = space + item
+                lsFinalSP.append(space)
+                del space
+            """for searchSpace in final:
                 for group in searchSpace:
                     for item in group:
                         if (item.iskeep == True):
@@ -263,7 +524,7 @@ class ConfigSpace(object):
                             else:
                                 space = space + item
                 lsFinalSP.append(space)
-                del space
+                del space"""
         elif(len(MixList)==1):
             final=list(MixList)
             for searchSpace in final:
@@ -279,8 +540,7 @@ class ConfigSpace(object):
                     del space
         else:
             pass
-        """
-        
+        """        
         for key, value in listDiffRootForb.items():
             for sp in lsFinalSP:
                 try:
@@ -363,10 +623,14 @@ class ConfigSpace(object):
                 lsParentName.append([con[1], con[2]])
             if(con[1] not in lsVarNameinCons):
                 lsVarNameinCons.append(con[1])
-            lsChildEffect.append([str(con[1]) + "_" + "".join(con[2]), con[0]])
+            #lsChildEffect.append([str(con[1]) + "_" + "".join(con[2]), con[0]])
+        ##Check if child belongs to 2 parents (conflict case):
+        #{i[0]: [x[0] for x in lsParentName].count(i[0]) for i in lsParentName}
+        #for item in [item for item, count in collections.Counter([x[0] for x in lsParentName]).items() if count > 1]:
+
         #lsParentName = [t for t in (set(tuple(i) for i in lsParentName))]
         #lsVarNameinCons = np.unique(np.array(lsVarNameinCons))
-        ##List out the branhces which have values with no conditional
+        ##List out the branches which have values with no conditional
         if (ifAllSolution == True):
             for vName in lsVarNameinCons:
                 itemValues = self._hyperparameters[vName].bounds[0]
@@ -387,7 +651,37 @@ class ConfigSpace(object):
                     #','.join([str(elem) for elem in noCon])
                 #for a3 in noCon:
                 #    lsParentName.append(tuple([a1, a3]))
-        lsSearchSpace = self.listoutAllBranches(lsVarNameinCons, lsChildEffect, lsParentName)
+        newlsParentName = []
+        for item,count in collections.Counter([x[0] for x in lsParentName]).items():
+            if(count==1):
+                newlsParentName.extend([[x[0],x[1]] for x in lsParentName if x[0]==item])
+            else:
+                temp = [[x[0], len(x[1]), x[1]] for x in lsParentName if x[0] == item]
+                temp.sort(reverse=False)
+                feeded = []
+                for index, rootvalue in enumerate(temp):
+                    # print(index,rootvalue)
+                    flag = False
+                    for value in temp[index + 1:]:
+                        abc = set(rootvalue[2]).intersection(set(value[2]))
+                        if (len(abc) > 0):
+                            flag = True
+                        if (len(set(rootvalue[2]).intersection([item for sublist in feeded for item in sublist])) > 0):
+                            flag = True
+                    if (flag == True):
+                        for i in rootvalue[2]:
+                            if (i not in ([item for sublist in feeded for item in sublist])):
+                                newlsParentName.append([rootvalue[0], [i]])
+                                feeded.append([i])
+                    else:
+                        dif = list(set(rootvalue[2]).difference([item for sublist in feeded for item in sublist]))
+                        newlsParentName.append([rootvalue[0], dif])
+                        feeded.append(dif)
+        for item in newlsParentName:
+            #con=
+            for con in [x for x in cons.conditional.values() if x[1]==item[0] and len(set(x[2]).intersection(item[1]))]:
+                lsChildEffect.append([str(con[1]) + "_" + "".join(item[1]), con[0]])
+        lsSearchSpace = self.listoutAllBranches(lsVarNameinCons, lsChildEffect, newlsParentName)
         return lsSearchSpace
     #def _checkForbidden(self, lsSearchSpace):
 

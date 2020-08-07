@@ -1,0 +1,20 @@
+from BanditOpt.BO4ML import BO4ML, ConfigSpace, ConditionalSpace, NominalSpace, OrdinalSpace, ContinuousSpace, Forbidden
+search_space = ConfigSpace()
+# Define Search Space
+lv1 = NominalSpace(['A00','B00','C00'],'A')
+lv2 = NominalSpace(["A01", "A02","A03"], "A1")
+lv3 = NominalSpace(['A11','A12'],'A3')
+lv4 = NominalSpace(["A21", "A22"], "A4")
+lv5 = NominalSpace(["A31", "A32"], "C")
+lv6 = NominalSpace(["D31", "D32"], "D")
+search_space.add_multiparameter([lv1,lv2,lv3,lv4,lv5,lv6])
+con = ConditionalSpace("conditional")
+con.addConditional(lv2, lv1, "A00")
+con.addConditional(lv3,lv2,"A01")
+con.addConditional(lv4,lv3,"A12")
+con.addConditional(lv6,lv2,["A02","A01"])
+forb =Forbidden()
+forb.addForbidden(lv2,["A1","A1"],lv4,["A21"])
+abc= search_space.Combine(con, forb)
+for i in abc:
+    print(i.sampling())

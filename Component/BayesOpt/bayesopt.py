@@ -38,6 +38,8 @@ class BayesOpt(object):
         self.BO.pre_eval_check = funcType(ext.check_configuration,self.BO)
         if(self.eval_type=="dict"):
             self.BO.run = funcType(ext.BOrun_todict,self.BO)
+            self.BO.evaluate = funcType(ext.evaluate,self.BO)
+            self.BO.formatCandidate =funcType(ext.formatCandidate,self.BO)
         self.BO._forbidden=self.forbidden
         self.BO._conditional=self.conditional
         self.BO._isBandit=self.isBandit

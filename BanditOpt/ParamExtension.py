@@ -113,7 +113,7 @@ def init_ContinuousSpace(self, bounds, var_name='r', name=None, precision=None, 
     assert all(self._bounds[0, :] < self._bounds[1, :])
 
 
-def init_OrdinalSpace(self, bounds, var_name='i', name=None, default = None):
+def init_OrdinalSpace(self, bounds, var_name='i', name=None, default=None):
     super(OrdinalSpace, self).__init__(bounds, var_name, name, default)
     self.var_type = ['O'] * self.dim
     self._lb, self._ub = zip(*self.bounds)  # for sampling
@@ -130,14 +130,52 @@ def rebuild(hyperparameter):
         hyperparameter.levels = {i: hyperparameter.bounds[i] for i in hyperparameter.id_N}
         hyperparameter._levels = {i: hyperparameter.bounds[i] for i in hyperparameter.id_N}
         hyperparameter._n_levels = {i: len(hyperparameter.bounds[i]) for i in hyperparameter.id_N}
+        if (hyperparameter.default not in hyperparameter.bounds[0]):
+            hyperparameter.default = hyperparameter.bounds[0][0]
         # hyperparameter._n_levels = [len(l) for l in hyperparameter._levels]
     elif (isinstance(hyperparameter, ContinuousSpace)):
         pass
     return hyperparameter
 
 
+def formatCandidate(self, data):
+    lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb, var_names = [], [], [], [], [], []
+    for i, con in self._conditional.conditional.items():
+        if ([con[1], con[2], con[0]] not in lsParentName):
+            lsParentName.append([con[1], con[2], con[0]])
+        if (con[0] not in childList):
+            childList.append(con[0])
+        if (con[1] not in var_names):
+            var_names.append(con[1])
+    lsRootNode = [x for x in var_names if x not in childList]
+    for root in lsRootNode:
+        rootvalue = data[root]
+        ActiveLst.append(root)
+        for node, value in [(x[2], x[1]) for x in lsParentName if x[0] == root and rootvalue in x[1]]:
+            value = data[node]
+            ActiveLst.append(node)
+            nodeChilds = [(x[2], x[1]) for x in lsParentName if x[0] == node and value in x[1]]
+            while (len(nodeChilds) > 0):
+                childofChild = []
+                for idx, child in enumerate(nodeChilds):
+                    childvalue = data[child[0]]
+                    childofChild.extend([(x[2], x[1]) for x in lsParentName if x[0] == child[0] and childvalue in x[1]])
+                    ActiveLst.append(child[0])
+                    # del nodeChilds[idx]
+                if (len(childofChild) > 0):
+                    nodeChilds = childofChild
+    newX = data
+    if self._eval_type == 'dict':
+        newX = dict()
+        for x in ActiveLst:
+            newX[x] = data[x]
+    else:
+        pass
+    return newX
+
+
 def imputation(conditional, x, var_names, defaultvalue):
-    lsParentName, childList, lsFinalSP,ActiveLst, noCheckForb = [], [], [], [], []
+    lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb = [], [], [], [], []
     for i, con in conditional.conditional.items():
         if ([con[1], con[2], con[0]] not in lsParentName):
             lsParentName.append([con[1], con[2], con[0]])
@@ -158,14 +196,37 @@ def imputation(conditional, x, var_names, defaultvalue):
                     childvalue = x[var_names.index(child[0])]
                     childofChild.extend([(x[2], x[1]) for x in lsParentName if x[0] == child[0] and childvalue in x[1]])
                     ActiveLst.append(child[0])
-                    del nodeChilds[idx]
+                    #del nodeChilds[idx]
                 if (len(childofChild) > 0):
                     nodeChilds = childofChild
-    noCheckForb =[x for x in var_names if x not in ActiveLst]
+    noCheckForb = [x for x in var_names if x not in ActiveLst]
     for node in noCheckForb:
         x[var_names.index(node)] = defaultvalue[node]
 
     return x, noCheckForb
+
+
+def evaluate(self, data):
+    """Evaluate the candidate points and update evaluation info in the dataframe
+    """
+    N = len(data)
+    if self._eval_type == 'list':
+        X = [x.tolist() for x in data]
+    elif self._eval_type == 'dict':
+        X = [self._space.to_dict(x) for x in data]
+
+    # Parallelization is handled by the objective function itself
+    X = [self.formatCandidate(x) for x in X]
+    if self.parallel_obj_func is not None:
+        func_vals = self.parallel_obj_func(X)
+    else:
+        if self.n_job > 1:
+            func_vals = Parallel(n_jobs=self.n_job)(delayed(self.obj_func)(x) for x in X)
+        else:
+            func_vals = [self.obj_func(x) for x in X]
+
+    self.eval_count += N
+    return func_vals
 
 
 def check_configuration(self, X):
@@ -192,34 +253,34 @@ def check_configuration(self, X):
         if not any(CON & INT & CAT):
             """d.a.nguyen: add check conditional and forbidden here"""
             isBandit = self._isBandit
-            noChecklst=[]
-            if (isBandit == False and self._conditional != None):
+            noChecklst = []
+            if (self._conditional != None):
                 x, noChecklst = imputation(self._conditional, x, self.var_names, defaultvalue)
             else:
                 pass
             ##Check Forbidden
-            #noCheckid=[i for (i, v) in enumerate(self.var_names) if v in noChecklst]
+            # noCheckid=[i for (i, v) in enumerate(self.var_names) if v in noChecklst]
             x_dict = dict(zip(self.var_names, x))
-            x_dict= dict((i, v) for (i, v) in x_dict.items() if i not in noChecklst)
+            x_dict = dict((i, v) for (i, v) in x_dict.items() if i not in noChecklst)
             isFOB = False
-            if(self._forbidden!=None):
+            if (self._forbidden != None):
                 for fname, fvalue in self._forbidden.forbList.items():
                     hp_left = [(key, value) for (key, value) in x_dict.items() if
                                key == fvalue.left and len(set([value]).intersection(fvalue.leftvalue)) > 0]
                     hp_right = [(key, value) for (key, value) in x_dict.items() if
                                 key == fvalue.right and len(set([value]).intersection(fvalue.rightvalue)) > 0]
-                    hp_add1,hp_add2 =[],[]
-                    if(fvalue.ladd1 != None):
-                        hp_add1= [(key, value) for (key, value) in x_dict.items() if
-                               key == fvalue.ladd1 and len(set([value]).intersection(fvalue.ladd1value)) > 0]
+                    hp_add1, hp_add2 = [], []
+                    if (fvalue.ladd1 != None):
+                        hp_add1 = [(key, value) for (key, value) in x_dict.items() if
+                                   key == fvalue.ladd1 and len(set([value]).intersection(fvalue.ladd1value)) > 0]
                     if (fvalue.ladd2 != None):
                         hp_add2 = [(key, value) for (key, value) in x_dict.items() if
                                    key == fvalue.ladd2 and len(set([value]).intersection(fvalue.ladd2value)) > 0]
-                    if (fvalue.ladd1!=None and fvalue.ladd2 != None):
-                        if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1)>0 and len(hp_add2)>0):
+                    if (fvalue.ladd1 != None and fvalue.ladd2 != None):
+                        if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1) > 0 and len(hp_add2) > 0):
                             isFOB = True
-                    elif(fvalue.ladd1!=None):
-                        if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1)>0):
+                    elif (fvalue.ladd1 != None):
+                        if (len(hp_left) > 0 and len(hp_right) > 0 and len(hp_add1) > 0):
                             isFOB = True
                     else:
                         if (len(hp_left) > 0 and len(hp_right) > 0):

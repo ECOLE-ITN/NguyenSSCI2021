@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 search_space = ConfigSpace()
 # Define Search Space
-abc = NominalSpace(['A','B'],'ABC')
+abc = NominalSpace(['A','B','C','D'],'ABC')
 alg_namestr = NominalSpace(["SVM", "RF"], "alg_namestr")
 
 # Define Search Space for Support Vector Machine
@@ -24,13 +24,13 @@ max_features = NominalSpace(['auto', 'sqrt', 'log2'], "max_features")
 
 # Add Search space to Configuraion Space
 search_space.add_multiparameter([alg_namestr, kernel, C, degree, coef0, gamma
-                                    , n_estimators, criterion, max_depth, max_features])
+                                    , n_estimators, criterion, max_depth, max_features,abc])
 # Define conditional Space
 con = ConditionalSpace("conditional")
 con.addMutilConditional([kernel, C, degree, coef0, gamma], alg_namestr, "SVM")
 con.addMutilConditional([n_estimators, criterion, max_depth, max_features], alg_namestr, ["RF"])
 forb = Forbidden()
-forb.addForbidden(abc,"A",alg_namestr,"SVM")
+forb.addForbidden(abc,["A","C","D"],alg_namestr,"SVM")
 iris = datasets.load_iris()
 X = iris.data
 y = iris.target
@@ -40,6 +40,7 @@ def new_obj(params):
     print(params)
     return (np.random.uniform(0, 1))
 def obj_func(params):
+    print(params)
     params = {k: params[k] for k in params if params[k]}
     # print(params)
     classifier = params['alg_namestr']
@@ -56,7 +57,7 @@ def obj_func(params):
     return loss
 
 
-opt = BO4ML(search_space, new_obj, conditional=con,forbidden=forb, max_eval=20, verbose=True, n_job=1, n_point=1,
+opt = BO4ML(search_space, obj_func, conditional=con,forbidden=forb, max_eval=20, verbose=True, n_job=1, n_point=1,
             n_init_sample=3,SearchType="BO")
 
 xopt, fopt, _, eval_count = opt.run()
