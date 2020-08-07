@@ -140,13 +140,13 @@ def rebuild(hyperparameter):
 
 def formatCandidate(self, data):
     lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb, var_names = [], [], [], [], [], []
+    var_names=self.var_names
     for i, con in self._conditional.conditional.items():
         if ([con[1], con[2], con[0]] not in lsParentName):
             lsParentName.append([con[1], con[2], con[0]])
         if (con[0] not in childList):
             childList.append(con[0])
-        if (con[1] not in var_names):
-            var_names.append(con[1])
+
     lsRootNode = [x for x in var_names if x not in childList]
     for root in lsRootNode:
         rootvalue = data[root]
