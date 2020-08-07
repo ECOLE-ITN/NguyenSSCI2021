@@ -146,7 +146,6 @@ def formatCandidate(self, data):
             lsParentName.append([con[1], con[2], con[0]])
         if (con[0] not in childList):
             childList.append(con[0])
-
     lsRootNode = [x for x in var_names if x not in childList]
     for root in lsRootNode:
         rootvalue = data[root]
