@@ -323,8 +323,8 @@ class ConfigSpace(object):
                     #i = sp[item]
                     i=[x for sublist in sp for x in sublist if x.var_name[0] == item][0]
                     ivalue=i.bounds[0]
-                    #le.classes_ = LstEnc[item]
-                    #ivalue=le.transform(ivalue2)
+                    le.classes_ = LstEnc[item]
+                    ivalue=tuple(le.transform(ivalue))
                 except:
                     ivalue=None
                 itemarr.append(ivalue)
@@ -511,24 +511,24 @@ class ConfigSpace(object):
                 final=self._clustering(final)
                 for group in final:
                     for _,item in group.items():
-                        if (item.iskeep == True):
+                        #if (item.iskeep == True):
                             #FinalSP[item.var_name[0]] = item
-                            if 'space' not in locals():
-                                space = item
-                            else:
-                                space = space + item
+                        if 'space' not in locals():
+                            space = item
+                        else:
+                            space = space + item
                     lsFinalSP.append(space)
                     del space
             else:
                 for searchSpace in final:
                     for group in searchSpace:
                         for item in group:
-                            if (item.iskeep == True):
-                                FinalSP[item.var_name[0]] = item
-                                if 'space' not in locals():
-                                    space = item
-                                else:
-                                    space = space + item
+                            #if (item.iskeep == True):
+                                #FinalSP[item.var_name[0]] = item
+                            if 'space' not in locals():
+                                space = item
+                            else:
+                                space = space + item
                     lsFinalSP.append(space)
                     del space
         elif(len(MixList)==1):
