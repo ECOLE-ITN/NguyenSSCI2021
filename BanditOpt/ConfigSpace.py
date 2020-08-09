@@ -350,10 +350,10 @@ class ConfigSpace(object):
             #dfReturn = pd.concat([dfReturn[:], dff[:]], axis=1)
             dfReturn=dfReturn.join(pd.DataFrame(dff).set_index('idx'),on='id')
         dfReturn = dfReturn.fillna(0)
-        ncluster=30
+        ncluster=27
         complete = AgglomerativeClustering(n_clusters=ncluster, linkage='complete')
         # Fit & predict
-            # Make AgglomerativeClustering fit the dataset and predict the cluster labels
+        # Make AgglomerativeClustering fit the dataset and predict the cluster labels
         complete_pred = complete.fit_predict(dfReturn)
         lsReturn=[]
         for idx, i in enumerate(complete_pred):

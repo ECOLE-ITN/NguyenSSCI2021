@@ -33,7 +33,7 @@ class BO4ML(object):
                  tf=1e-1,
                  schedule='exp',
                  eval_type='dict',
-                 n_init_sample=None,
+                 n_init_sample=5,
                  n_point=1,
                  n_job=1,
                  n_restart=None,
@@ -89,7 +89,6 @@ class BO4ML(object):
         #self.orgSearchSpace=search_space
         #self.orgConditional=conditional
         #self.orgForbidden = forbidden
-
         isBandit=True
         if (conditional == None or SearchType !="Bandit"):
             isBandit=False
@@ -110,7 +109,11 @@ class BO4ML(object):
 
     def run(self):
         if (self.isBandit==True):
-            return self.runBO4ML()
+            if (len(self.searchspace) * self.MIP['n_point'] * self.MIP['n_init_sample'] > self.max_eval):
+                print("NOT ENOUGH BUDGET for: " + str(len(self.searchspace)) + "search spaces")
+                return None, None, None, None
+            else:
+                return self.runBO4ML()
         else:
             return self.runBO(self.searchspace)
     def runBO(self, search_space):

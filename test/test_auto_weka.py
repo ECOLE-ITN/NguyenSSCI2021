@@ -519,6 +519,6 @@ def new_obj(params):
 #print(len(ls))
 
 opt = BO4ML(search_space, new_obj,forbidden=myforb,conditional=con,SearchType="Bandit",
-            max_eval=2300, verbose=True, n_job=1, n_point=3,n_init_sample=5)
+            max_eval=300, verbose=True, n_job=1, n_point=3,n_init_sample=5)
 xopt, fopt, _, eval_count = opt.run()
 print(fopt)
