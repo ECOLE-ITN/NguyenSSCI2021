@@ -4,17 +4,17 @@ from typing import List
 import numpy as np
 from Component.BayesOpt import ContinuousSpace, NominalSpace, OrdinalSpace, SearchSpace
 
-
 class ConditionalSpace(object):
     def __init__(self, name):
         self.name = np.array(name)
         self.conditional = OrderedDict()
+        self.AllConditional=OrderedDict()
 
-    def addMutilConditional(self, child: List[SearchSpace] = None, parent: SearchSpace = None, parent_value=None):
+    def addMutilConditional(self, child: List[SearchSpace] = None, parent: SearchSpace = None, parent_value=None, isRoot=True):
         for achild in child:
-            self.addConditional(achild, parent, parent_value)
+            self.addConditional(achild, parent, parent_value,isRoot)
 
-    def addConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None):
+    def addConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None, isRoot=True):
         if not isinstance(child, SearchSpace):
             raise TypeError("Hyperparameter '%s' is not an instance of "
                             "mipego.SearchSpace" %
@@ -23,11 +23,18 @@ class ConditionalSpace(object):
             raise TypeError("Hyperparameter '%s' is not an instance of "
                             "mipego.SearchSpace" %
                             str(parent))
-        keyname=str(child.var_name[0]) + '_' + str(parent.var_name[0])
-        if (keyname in self.conditional.keys()):
-            self._updateConditional(child, parent, parent_value)
+        keyname = str(child.var_name[0]) + '_' + str(parent.var_name[0])
+        #All conditional for impute + bandit
+        if (keyname in self.AllConditional.keys()):
+            self._updateAllConditional(child, parent, parent_value)
         else:
-            self._addConditional(child, parent, parent_value)
+            self._addAllConditional(child, parent, parent_value)
+        #list of conditional for treezation only
+        if isRoot==True:
+            if (keyname in self.conditional.keys()):
+                self._updateConditional(child, parent, parent_value)
+            else:
+                self._addConditional(child, parent, parent_value)
     def _updateConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None) -> None:
         if not isinstance(parent_value, (list, tuple)):
             parent_value=list(parent_value)
@@ -49,7 +56,20 @@ class ConditionalSpace(object):
             #for value in parent_value:
                 #self.conditional[str(child.var_name[0]) + '_' + str(parent.var_name[0]) + '_' + str(value)] = [
                     #child.var_name[0], parent.var_name[0], value]
-
+    def _updateAllConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None) -> None:
+        if not isinstance(parent_value, (list, tuple)):
+            parent_value=list(parent_value)
+        keyname = str(child.var_name[0]) + '_' + str(parent.var_name[0])
+        old_value= self.AllConditional[keyname][2]
+        parent_value= parent_value + old_value
+        self.AllConditional[keyname] = [
+            child.var_name[0], parent.var_name[0],
+            parent_value]
+    def _addAllConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None) -> None:
+        if not isinstance(parent_value, (list, tuple)):
+            parent_value=list([parent_value])
+        keyname = str(child.var_name[0]) + '_' + str(parent.var_name[0])
+        self.AllConditional[keyname] = [child.var_name[0], parent.var_name[0],parent_value]
 
 if __name__ == '__main__':
     np.random.seed(1)

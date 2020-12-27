@@ -176,7 +176,7 @@ def formatCandidate(self, data):
 
 def imputation(conditional, x, var_names, defaultvalue):
     lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb = [], [], [], [], []
-    for i, con in conditional.conditional.items():
+    for i, con in conditional.AllConditional.items():
         if ([con[1], con[2], con[0]] not in lsParentName):
             lsParentName.append([con[1], con[2], con[0]])
         if (con[0] not in childList):

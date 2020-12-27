@@ -1,11 +1,12 @@
 from collections import OrderedDict
 from math import ceil, floor
-import copy
+import copy, math
 import numpy as np
 from Component.BayesOpt import bayesopt
 from BanditOpt.ConditionalSpace import ConditionalSpace
 from BanditOpt.ConfigSpace import ConfigSpace
 import Component.BayesOpt.bayesopt as MIP
+import Component.Hyperopt.hyperopt as HO
 from Component.BayesOpt import RandomForest
 from Component.BayesOpt import ContinuousSpace,OrdinalSpace,NominalSpace,SearchSpace
 from BanditOpt.Forbidden import Forbidden
@@ -18,6 +19,7 @@ class BO4ML(object):
                  eta=3,
                  SearchType="Bandit",
                  HPOopitmizer= "BayesOpt",
+                 sp_cluster=0,
                  parallel_obj_func=None,
                  ftarget=None,
                  eq_func=None,
@@ -43,7 +45,14 @@ class BO4ML(object):
                  data_file=None,
                  verbose=False,
                  random_seed=None,
-                 logger=None):
+                 logger=None,
+                 hpo_algo= None,
+                 hpo_pass_expr_memo_ctrl = None,
+                 hpo_verbose = 0,
+                 hpo_max_queue_len =1,
+                 hpo_show_progressbar=False,
+                 hpo_return_argmin=True
+                 ):
         #Hyperband: parameter
         self.eta=eta
         self.iter_count = 0
@@ -52,6 +61,7 @@ class BO4ML(object):
         self.HPOopitmizer= HPOopitmizer
         self.MIP={}
         self.max_eval= max_eval
+        self.sp_cluster=sp_cluster
         #MIP-EGO:parameter
         if (len(conditional.conditional)<1):
             conditional=None
@@ -94,7 +104,7 @@ class BO4ML(object):
             isBandit=False
         self.isBandit=isBandit
         self.MIP['isBandit'] =isBandit
-        self.searchspace = search_space.Combine(conditional, forbidden, isBandit)
+        self.searchspace = search_space.Combine(conditional, forbidden, isBandit,sp_cluster)
         """if (conditional==None):
             self.searchspace = search_space
         else:
@@ -106,16 +116,31 @@ class BO4ML(object):
         self._lsincumbent = OrderedDict()
         self.opt = OrderedDict()
         self.BO4ML_kwargs = OrderedDict()
-
+        ###Hyperopt:
+        if HPOopitmizer=='hyperopt':
+            self.HPO['obj_func']=obj_func
+            #self.HPO['org_search_space'] = search_space
+            self.HPO['algo'] = hpo_algo
+            self.HPO['max_eval'] = max_eval
+            self.HPO['rstate'] = random_seed
+            self.HPO['pass_expr_memo_ctrl']=hpo_pass_expr_memo_ctrl
+            self.HPO['verbose']=hpo_verbose
+            self.HPO['return_argmin']=hpo_return_argmin
+            self.HPO['max_queue_len']=hpo_max_queue_len
+            self.HPO['show_progressbar']=hpo_show_progressbar
     def run(self):
-        if (self.isBandit==True):
-            if (len(self.searchspace) * self.MIP['n_point'] * self.MIP['n_init_sample'] > self.max_eval):
-                print("NOT ENOUGH BUDGET for: " + str(len(self.searchspace)) + "search spaces")
-                return None, None, None, None
-            else:
-                return self.runBO4ML()
+        if(self.HPOopitmizer=='hyperopt'):
+            pass
         else:
-            return self.runBO(self.searchspace)
+            if (self.isBandit==True):
+                if((self.sp_cluster>0 )and (self.sp_cluster**3 >self.max_eval)):
+                #if (len(self.searchspace) * self.MIP['n_point'] * self.MIP['n_init_sample'] > self.max_eval):
+                    print("NOT ENOUGH BUDGET for: " + str(len(self.searchspace)) + "search spaces")
+                    return None, None, None, None
+                else:
+                    return self.runBO4ML()
+            else:
+                return self.runBO(self.searchspace)
     def runBO(self, search_space):
         self.MIP['sp_id'] =0
         self.MIP['search_space'] = search_space
@@ -157,7 +182,8 @@ class BO4ML(object):
         eval_race = max_eval / num_races
         errList = []
         for iround, num_candidate in lsRace.items():
-            print("The ", iround + 1, " round, Runing:", num_candidate, "Candidates")
+            cd_add_eval = int(floor(eval_race / num_candidate))
+            print("Round: ", iround + 1, ", Candidates:", num_candidate, "Func Eval/candidate:",cd_add_eval)
             if (self.MIP['minimize'] == True):
                 lsThisRound = list(OrderedDict(sorted(self._lsCurrentBest.items(), key=lambda item: item[1])).items())[
                               :num_candidate]
@@ -165,7 +191,7 @@ class BO4ML(object):
                 lsThisRound = list(OrderedDict(sorted(self._lsCurrentBest.items(), key=lambda item: item[1],
                                                       reverse=True)).items())[:num_candidate]
             for cdid, bestloss in lsThisRound:
-                cd_add_eval = int(floor(eval_race / num_candidate))
+                #cd_add_eval = int(floor(eval_race / num_candidate))
                 if (num_candidate<=1):
                     remain_eval = self.max_eval - self.eval_count
                     cd_add_eval = max(cd_add_eval,remain_eval)
@@ -261,6 +287,8 @@ if __name__ == '__main__':
     from sklearn.model_selection import cross_val_score
     from sklearn.preprocessing import StandardScaler
     from sklearn.ensemble import RandomForestClassifier
+    import warnings
+    warnings.filterwarnings("ignore")
     # define Configuration space
     search_space = ConfigSpace()
 
@@ -287,7 +315,7 @@ if __name__ == '__main__':
     con = ConditionalSpace("conditional")
     con.addMutilConditional([kernel, C, degree, coef0, gamma, test], alg_namestr, ["SVM"])
     con.addMutilConditional([n_estimators, criterion, max_depth, max_features], alg_namestr, ["RF"])
-
+    con.addConditional(gamma,test,'A',False)
     fobr = Forbidden()
     fobr.addForbidden(max_features, "auto", criterion, "gini")
     fobr.addForbidden(test,"A",kernel,"linear")
@@ -314,7 +342,7 @@ if __name__ == '__main__':
         loss = 1 - mean
         # print (mean)
         return loss
-    opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="BO", max_eval=10, verbose=True, n_job=1, n_point=1,
+    opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=30, verbose=False, n_job=1, n_point=1,
                 n_init_sample=5)
 
     xopt, fopt, _, eval_count = opt.run()

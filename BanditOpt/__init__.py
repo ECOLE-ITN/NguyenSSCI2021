@@ -13,4 +13,6 @@ from Component import BayesOpt
 from Component.BayesOpt import NominalSpace, ContinuousSpace, OrdinalSpace, SearchSpace
 from Component.BayesOpt import Surrogate, InfillCriteria
 
-__all__ = ['BO4ML', 'BayesOpt', 'ConditionalSpace', 'ConfigSpace', 'NominalSpace', 'ContinuousSpace', 'OrdinalSpace','Forbidden', 'InfillCriteria', 'Surrogate', 'SearchSpace']
+__all__ = ['BO4ML', 'BayesOpt', 'ConditionalSpace',
+           'ConfigSpace', 'NominalSpace', 'ContinuousSpace', 'OrdinalSpace',
+           'Forbidden', 'InfillCriteria', 'Surrogate', 'SearchSpace']

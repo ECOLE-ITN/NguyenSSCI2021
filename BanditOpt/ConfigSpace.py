@@ -305,7 +305,7 @@ class ConfigSpace(object):
             #hpchild = [temp]
             hpi.append(temp)
         return hpi
-    def _clustering(self,final):
+    def _clustering(self,final,sp_cluster):
 
         header=[x.var_name[0] for x in self._hyperparameters.values() if isinstance(x,NominalSpace)]
         notcount=[x.var_name[0] for x in self._hyperparameters.values() if isinstance(x,NominalSpace)==False]
@@ -350,7 +350,7 @@ class ConfigSpace(object):
             #dfReturn = pd.concat([dfReturn[:], dff[:]], axis=1)
             dfReturn=dfReturn.join(pd.DataFrame(dff).set_index('idx'),on='id')
         dfReturn = dfReturn.fillna(0)
-        ncluster=27
+        ncluster=sp_cluster
         complete = AgglomerativeClustering(n_clusters=ncluster, linkage='complete')
         # Fit & predict
         # Make AgglomerativeClustering fit the dataset and predict the cluster labels
@@ -375,7 +375,7 @@ class ConfigSpace(object):
                 x=rebuild(x)
             newFinal.append(temp)
         return newFinal
-    def listoutAllBranches(self, lsvarname, childeffect, lsparentname) -> List[SearchSpace]:
+    def listoutAllBranches(self, lsvarname, childeffect, lsparentname,sp_cluster=0) -> List[SearchSpace]:
         #hp = copy.deepcopy(self._hyperparameters)
         hp=self._hyperparameters
         temp_hpi,lsBranches = [], []
@@ -507,8 +507,8 @@ class ConfigSpace(object):
                 igroup+=1
             for index in sorted(tobedel, reverse=True):
                 del final[index]
-            if (len(final)>30):
-                final=self._clustering(final)
+            if (sp_cluster>0 and len(final)>sp_cluster):
+                final=self._clustering(final,sp_cluster)
                 for group in final:
                     for _,item in group.items():
                         #if (item.iskeep == True):
@@ -586,11 +586,11 @@ class ConfigSpace(object):
                         print(intersectionLeft,intersectionRight)
             """
         return lsFinalSP
-    def Combine(self,  Conditional: ConditionalSpace = None, Forbidden: Forbidden = None,isBandit: bool=True, ifAllSolution=True) -> List[SearchSpace]:
+    def Combine(self,  Conditional: ConditionalSpace = None, Forbidden: Forbidden = None,isBandit: bool=True,sp_cluster=0, ifAllSolution=True) -> List[SearchSpace]:
         if (Conditional == None):
             isBandit=False
         if(isBandit == True):
-            return self.combinewithconditional(Conditional,Forbidden, ifAllSolution)
+            return self.combinewithconditional(Conditional,Forbidden,sp_cluster, ifAllSolution)
         else:
             self._listconditional = Conditional
             self._listForbidden = Forbidden
@@ -600,7 +600,7 @@ class ConfigSpace(object):
                 else:
                     space = space + item
             return space
-    def combinewithconditional(self, cons: ConditionalSpace = None, forb: Forbidden = None, ifAllSolution=True) -> List[SearchSpace]:
+    def combinewithconditional(self, cons: ConditionalSpace = None, forb: Forbidden = None,sp_cluster=0, ifAllSolution=True) -> List[SearchSpace]:
         self._listconditional=cons
         self._listForbidden=forb
         listParam = OrderedDict()
@@ -687,7 +687,7 @@ class ConfigSpace(object):
             #con=
             for con in [x for x in cons.conditional.values() if x[1]==item[0] and len(set(x[2]).intersection(item[1]))]:
                 lsChildEffect.append([str(con[1]) + "_" + "".join(item[1]), con[0]])
-        lsSearchSpace = self.listoutAllBranches(lsVarNameinCons, lsChildEffect, newlsParentName)
+        lsSearchSpace = self.listoutAllBranches(lsVarNameinCons, lsChildEffect, newlsParentName,sp_cluster)
         return lsSearchSpace
     #def _checkForbidden(self, lsSearchSpace):
 
