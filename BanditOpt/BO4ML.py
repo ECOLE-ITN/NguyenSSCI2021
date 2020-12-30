@@ -6,11 +6,12 @@ from Component.BayesOpt import bayesopt
 from BanditOpt.ConditionalSpace import ConditionalSpace
 from BanditOpt.ConfigSpace import ConfigSpace
 import Component.BayesOpt.bayesopt as MIP
-import Component.Hyperopt.hyperopt as HO
+import Component.mHyperopt.hyperopt as HO
 from Component.BayesOpt import RandomForest
 from Component.BayesOpt import ContinuousSpace,OrdinalSpace,NominalSpace,SearchSpace
 from BanditOpt.Forbidden import Forbidden
-
+from BanditOpt.HyperoptConverter import ToHyperopt
+from BanditOpt import tpe
 class BO4ML(object):
     def __init__(self, search_space: ConfigSpace,
                  obj_func,surrogate=None,
@@ -46,7 +47,8 @@ class BO4ML(object):
                  verbose=False,
                  random_seed=None,
                  logger=None,
-                 hpo_algo= None,
+                 hpo_algo= tpe,
+                 hpo_trials= None,
                  hpo_pass_expr_memo_ctrl = None,
                  hpo_verbose = 0,
                  hpo_max_queue_len =1,
@@ -59,43 +61,13 @@ class BO4ML(object):
         self.eval_count = 0
         self.stop_dict = {}
         self.HPOopitmizer= HPOopitmizer
-        self.MIP={}
+
         self.max_eval= max_eval
         self.sp_cluster=sp_cluster
+        self.isminize=minimize
         #MIP-EGO:parameter
         if (len(conditional.conditional)<1):
             conditional=None
-        self.MIP['obj_func'] = obj_func
-        self.MIP['surrogate'] = surrogate
-        self.MIP['parallel_obj_func'] = parallel_obj_func
-        self.MIP['ftarget'] = ftarget
-        self.MIP['eq_func'] = eq_func
-        self.MIP['ineq_func'] = ineq_func
-        self.MIP['minimize'] = minimize
-        self.MIP['max_eval'] = max_eval
-        self.MIP['max_iter'] = max_iter
-        self.MIP['init_points'] = init_points
-        self.MIP['warm_data'] = warm_data
-        self.MIP['infill'] = infill
-        self.MIP['noisy'] = noisy
-        self.MIP['t0'] = t0
-        self.MIP['tf'] = tf
-        self.MIP['schedule'] = schedule
-        self.MIP['eval_type'] = eval_type
-        self.MIP['n_init_sample'] = n_init_sample
-        self.MIP['n_point'] = n_point
-        self.MIP['n_job'] = n_job
-        self.MIP['n_restart'] = n_restart
-        self.MIP['max_infill_eval'] = max_infill_eval
-        self.MIP['wait_iter'] = wait_iter
-        self.MIP['optimizer'] = optimizer
-        self.MIP['data_file'] = data_file
-        self.MIP['verbose'] = verbose
-        self.MIP['random_seed'] = random_seed
-        self.MIP['logger'] = logger
-        self.MIP['forbidden']=forbidden
-        self.MIP['conditional']=conditional
-        self.MIP['hyperparameters']=search_space
         #self.orgSearchSpace=search_space
         #self.orgConditional=conditional
         #self.orgForbidden = forbidden
@@ -103,8 +75,8 @@ class BO4ML(object):
         if (conditional == None or SearchType !="Bandit"):
             isBandit=False
         self.isBandit=isBandit
-        self.MIP['isBandit'] =isBandit
         self.searchspace = search_space.Combine(conditional, forbidden, isBandit,sp_cluster)
+
         """if (conditional==None):
             self.searchspace = search_space
         else:
@@ -116,21 +88,61 @@ class BO4ML(object):
         self._lsincumbent = OrderedDict()
         self.opt = OrderedDict()
         self.BO4ML_kwargs = OrderedDict()
-        ###Hyperopt:
-        if HPOopitmizer=='hyperopt':
+        ###mHyperopt:
+        if HPOopitmizer in ['hyperopt','Hyperopt','hpo','HyperOpt']:
+            self.HPO = {}
             self.HPO['obj_func']=obj_func
-            #self.HPO['org_search_space'] = search_space
+            HPOsearchspace = ToHyperopt(self.searchspace)
+            self.searchspace=HPOsearchspace
+            self.HPO['org_search_space'] = HPOsearchspace
             self.HPO['algo'] = hpo_algo
             self.HPO['max_eval'] = max_eval
+            self.HPO['trials']= hpo_trials
             self.HPO['rstate'] = random_seed
+            self.HPO['n_init_sample'] = n_init_sample
             self.HPO['pass_expr_memo_ctrl']=hpo_pass_expr_memo_ctrl
             self.HPO['verbose']=hpo_verbose
             self.HPO['return_argmin']=hpo_return_argmin
             self.HPO['max_queue_len']=hpo_max_queue_len
             self.HPO['show_progressbar']=hpo_show_progressbar
+        else:
+            self.MIP = {}
+            self.MIP['isBandit'] = isBandit
+            self.MIP['obj_func'] = obj_func
+            self.MIP['surrogate'] = surrogate
+            self.MIP['parallel_obj_func'] = parallel_obj_func
+            self.MIP['ftarget'] = ftarget
+            self.MIP['eq_func'] = eq_func
+            self.MIP['ineq_func'] = ineq_func
+            self.MIP['minimize'] = minimize
+            self.MIP['max_eval'] = max_eval
+            self.MIP['max_iter'] = max_iter
+            self.MIP['init_points'] = init_points
+            self.MIP['warm_data'] = warm_data
+            self.MIP['infill'] = infill
+            self.MIP['noisy'] = noisy
+            self.MIP['t0'] = t0
+            self.MIP['tf'] = tf
+            self.MIP['schedule'] = schedule
+            self.MIP['eval_type'] = eval_type
+            self.MIP['n_init_sample'] = n_init_sample
+            self.MIP['n_point'] = n_point
+            self.MIP['n_job'] = n_job
+            self.MIP['n_restart'] = n_restart
+            self.MIP['max_infill_eval'] = max_infill_eval
+            self.MIP['wait_iter'] = wait_iter
+            self.MIP['optimizer'] = optimizer
+            self.MIP['data_file'] = data_file
+            self.MIP['verbose'] = verbose
+            self.MIP['random_seed'] = random_seed
+            self.MIP['logger'] = logger
+            self.MIP['forbidden'] = forbidden
+            self.MIP['conditional'] = conditional
+            self.MIP['hyperparameters'] = search_space
     def run(self):
         if(self.HPOopitmizer=='hyperopt'):
-            pass
+            if (self.isBandit==True):
+                return self.runHO4ML()
         else:
             if (self.isBandit==True):
                 if((self.sp_cluster>0 )and (self.sp_cluster**3 >self.max_eval)):
@@ -141,12 +153,18 @@ class BO4ML(object):
                     return self.runBO4ML()
             else:
                 return self.runBO(self.searchspace)
-    def runBO(self, search_space):
-        self.MIP['sp_id'] =0
-        self.MIP['search_space'] = search_space
 
-        kwargs = self.MIP
-        BO = MIP.BayesOpt(**kwargs)
+    def runBO(self, search_space):
+        if (self.HPOopitmizer=='hyperopt'):
+            self.HPO['sp_id'] = 0
+            self.HPO['search_space'] = search_space
+            kwargs = self.HPO
+            BO = HO.HyperOpt(**kwargs)
+        else:
+            self.MIP['sp_id'] = 0
+            self.MIP['search_space'] = search_space
+            kwargs = self.MIP
+            BO = MIP.BayesOpt(**kwargs)
         return BO.run()
     def runBO4ML(self):
 
@@ -260,7 +278,118 @@ class BO4ML(object):
         best_cdid = lsThisRound[0][0]
         best_incumbent, best_value = self._lsincumbent[best_cdid], self._lsCurrentBest[best_cdid]
         return best_incumbent, best_value, "_", self.eval_count
+    def runHO4ML(self):
 
+        for sp in self.searchspace:
+            sp_id = self.searchspace.index(sp)
+            if 'kwargs' in locals():
+                kwargs.clear()
+            trials = Trials()
+            kwargs=copy.deepcopy(self.HPO)
+            kwargs['sp_id'] = sp_id
+            kwargs['search_space'] = sp
+            kwargs['max_eval']= kwargs['n_init_sample']
+            kwargs['trials'] = trials
+            self.BO4ML_kwargs[sp_id] = copy.deepcopy(kwargs)
+            self.opt[sp_id] = HO.HyperOpt(**kwargs)
+            #funcType=type(BO.BayesOpt.pre_eval_check)
+            #self.opt[sp_id].pre_eval_check = funcType(ext.check_configuration,self.opt[sp_id],BO.BayesOpt)
+            try:
+                xopt, fopt, stop_dict,ieval_count  = self.opt[sp_id].run()
+                self._lsincumbent[sp_id] = xopt
+                self._lsCurrentBest[sp_id] =fopt #min(self.opt[sp_id].eval_hist)
+                self.eval_count += ieval_count
+                print('INIT message:', str(sp_id), '--best: ', str(fopt))
+            except Exception as e:
+                #ieval_count =self.opt[sp_id].eval_count
+                print('INIT Round ERROR:', str(sp_id), '--msg:', e)
+             #self.opt[sp_id].eval_count
+            # lsRunning[sp_id] = [incumbent,model,stop_dict, opt[sp_id]]
+        max_eval = self.max_eval - self.eval_count
+        lsRace = self.calculateSH()
+        num_races = len(lsRace)
+        eval_race = max_eval / num_races
+        errList = []
+        for iround, num_candidate in lsRace.items():
+            cd_add_eval = int(floor(eval_race / num_candidate))
+            print("Round: ", iround + 1, ", Candidates:", num_candidate, "Func Eval/candidate:",cd_add_eval)
+            if (self.isminize== True):
+                lsThisRound = list(OrderedDict(sorted(self._lsCurrentBest.items(), key=lambda item: item[1])).items())[
+                              :num_candidate]
+            else:
+                lsThisRound = list(OrderedDict(sorted(self._lsCurrentBest.items(), key=lambda item: item[1],
+                                                      reverse=True)).items())[:num_candidate]
+            for cdid, bestloss in lsThisRound:
+                #cd_add_eval = int(floor(eval_race / num_candidate))
+                if (num_candidate<=1):
+                    remain_eval = self.max_eval - self.eval_count
+                    cd_add_eval = max(cd_add_eval,remain_eval)
+                print("previous best loss was:", bestloss, "of", cdid)
+                cd_ran_eval = len(self.opt[cdid].trials)
+                try:
+                    xopt, fopt, stop_dict,ieval_count = self.opt[cdid].AddBudget_run(cd_add_eval,iround)
+                    self._lsincumbent[cdid] = xopt
+                except Exception as e:
+                    self.opt[cdid].max_eval = self.opt[cdid].eval_count
+                    cd_add_eval = self.opt[cdid].eval_count - cd_ran_eval
+                    fopt = self.opt[cdid].eval_hist[self.opt[cdid].incumbent_id]
+                    if (cdid not in errList):
+                        errList.append(cdid)
+                    print('BO4ML-ERROR at round:',str(iround),"-Candidate ID:",cdid,"--msg:", e)
+                #update infor
+                self.eval_count += cd_add_eval
+                self._lsCurrentBest[cdid] = fopt
+        errIDs = errList
+        while (len(errList) > 0):
+            if (len(errIDs) >= len(self.searchspace)):
+                break
+            print("Additional round, Runing: 1 Candidate")
+            shortLst = OrderedDict([f for f in self._lsCurrentBest.items() if f[0] not in errIDs])
+            errList = []
+            if (self.MIP['minimize'] == True):
+                lsThisRound = list(OrderedDict(sorted(shortLst.items(), key=lambda item: item[1])).items())[:1]
+            else:
+                lsThisRound = list(OrderedDict(sorted(shortLst.items(), key=lambda item: item[1],
+                                                      reverse=True)).items())[:1]
+            for cdid, bestloss in lsThisRound:
+                num_races +=1
+                remain_eval = self.max_eval - self.eval_count
+                remain_iter = self.max_iter - self.iter_count
+                cd_add_eval = remain_eval
+                cd_add_iter = remain_iter
+                # lc_N_value_count= [len(sp.le)]
+                print("previous best loss was:", bestloss, "of CandidateID", cdid)
+                # cdvalue
+                cd_ran_iter = self.opt[cdid].iter_count
+                cd_ran_eval = self.opt[cdid].eval_count
+                try:
+                    xopt, fopt, stop_dict, ieval_count = self.opt[cdid].AddBudget_run(cd_add_eval,num_races)
+                    self._lsincumbent[cdid] = xopt
+                except Exception as e:
+                    self._lsincumbent[cdid] = None
+                    self.opt[cdid].max_iter = self.opt[cdid].iter_count
+                    self.opt[cdid].max_eval = self.opt[cdid].eval_count
+                    fopt = self.opt[cdid].eval_hist[self.opt[cdid].incumbent_id]
+                    cd_add_iter = self.opt[cdid].iter_count - cd_ran_iter
+                    cd_add_eval = self.opt[cdid].eval_count - cd_ran_eval
+                    if (cdid not in errIDs):
+                        errIDs.append(cdid)
+                    errList.append(cdid)
+                    print('BO4ML-ERROR: ==Additional Round==', e)
+                # update infor
+                self.iter_count += cd_add_iter
+                self.eval_count += cd_add_eval
+                self._lsCurrentBest[cdid] = fopt
+        # conclusion
+        if (self.isminize == True):
+            lsThisRound = list(OrderedDict(sorted(self._lsCurrentBest.items(), key=lambda item: item[1])).items())[:1]
+        else:
+            lsThisRound = list(OrderedDict(sorted(self._lsCurrentBest.items(), key=lambda item: item[1],
+                                                  reverse=True)).items())[:1]
+        best_cdid = lsThisRound[0][0]
+        best_incumbent, best_value = self._lsincumbent[best_cdid], self._lsCurrentBest[best_cdid]
+        lstrials=[x.trials for _,x in self.opt.items()]
+        return best_incumbent, best_value, lstrials, self.eval_count
     def mega_stop(self):
         if self.iter_count >= self.max_iter:
             self.stop_dict['max_iter'] = True
@@ -287,6 +416,7 @@ if __name__ == '__main__':
     from sklearn.model_selection import cross_val_score
     from sklearn.preprocessing import StandardScaler
     from sklearn.ensemble import RandomForestClassifier
+    from Component.mHyperopt import tpe, rand, Trials
     import warnings
     warnings.filterwarnings("ignore")
     # define Configuration space
@@ -342,9 +472,11 @@ if __name__ == '__main__':
         loss = 1 - mean
         # print (mean)
         return loss
-    opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=30, verbose=False, n_job=1, n_point=1,
-                n_init_sample=5)
-
+    #opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=30, verbose=False, n_job=1, n_point=1,
+              #  n_init_sample=5)
+    suggest = tpe.suggest
+    opt = BO4ML(search_space, new_obj, forbidden=fobr, conditional=con, SearchType="Bandit",
+                HPOopitmizer='hyperopt', max_eval=30,hpo_algo=suggest)
     xopt, fopt, _, eval_count = opt.run()
     print(fopt)
 

@@ -1,6 +1,8 @@
 numpy
 scipy
 scikit-learn
+hyperopt
+lightgbm
 git+https://github.com/wangronin/Bayesian-Optimization.git
 
 

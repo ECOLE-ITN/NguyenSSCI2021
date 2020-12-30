@@ -12,7 +12,8 @@ from .Forbidden import Forbidden
 from Component import BayesOpt
 from Component.BayesOpt import NominalSpace, ContinuousSpace, OrdinalSpace, SearchSpace
 from Component.BayesOpt import Surrogate, InfillCriteria
-
+from Component.mHyperopt import hp,fmin,tpe,rand,Trials, STATUS_OK
 __all__ = ['BO4ML', 'BayesOpt', 'ConditionalSpace',
            'ConfigSpace', 'NominalSpace', 'ContinuousSpace', 'OrdinalSpace',
-           'Forbidden', 'InfillCriteria', 'Surrogate', 'SearchSpace']
+           'Forbidden', 'InfillCriteria', 'Surrogate', 'SearchSpace',
+           'hp','fmin','tpe','rand','Trials', 'STATUS_OK']
