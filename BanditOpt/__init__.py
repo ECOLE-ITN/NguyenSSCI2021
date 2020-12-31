@@ -5,6 +5,7 @@ Created on Fri Dec 06 12:04:30 2019
 @author: d.a.nguyen
 updated on Sat Jul 18 11:26:00 2020
 """
+from __future__ import absolute_import
 
 from .ConditionalSpace import ConditionalSpace
 from .ConfigSpace import ConfigSpace

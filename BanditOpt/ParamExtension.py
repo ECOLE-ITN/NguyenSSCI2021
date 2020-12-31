@@ -1,12 +1,13 @@
-from BayesOpt.SearchSpace import ContinuousSpace, NominalSpace, OrdinalSpace, SearchSpace
+from Component.BayesOpt import ContinuousSpace, NominalSpace, OrdinalSpace, SearchSpace
 import numpy as np
-import copy
-from BayesOpt.BayesOpt import BO
-from BayesOpt.base import Solution
+from copy import copy, deepcopy
+#from BayesOpt.BayesOpt import BO
+#from BayesOpt.base import Solution
+from Component.BayesOpt import Solution
 
 
 ###Search space
-def init_SearchSpace(self, bounds, var_name, name, default=None):
+def init_SearchSpace(self, bounds, var_name, name,  random_seed=None, default=None):
     """Search Space Base Class
 
     Parameters
@@ -70,10 +71,12 @@ def init_SearchSpace(self, bounds, var_name, name, default=None):
             self.default = default
     self.dim = len(self.bounds)
     self.name = name
+    self.random_seed = random_seed
     self.var_type = None
     self.levels = None
-    self.precision = None
-
+    #self.precision = None
+    self.precision = {}
+    self.scale = {}
     if var_name is not None:
         if isinstance(var_name, str):
             if self.dim > 1:
@@ -85,9 +88,10 @@ def init_SearchSpace(self, bounds, var_name, name, default=None):
 
 
 def init_NominalSpace(self, levels, var_name='d', name=None, default=None):
-    levels = np.atleast_2d(levels)
-    levels = [np.unique(l).tolist() for l in levels]
-
+    #update 30/12/2020
+    #levels = np.atleast_2d(levels)
+    #levels = [np.unique(l).tolist() for l in levels]
+    levels = self._get_unique_levels(levels)
     super(NominalSpace, self).__init__(levels, var_name, name, default)
     self.var_type = ['N'] * self.dim
     self._levels = [np.array(b) for b in self.bounds]
@@ -95,7 +99,7 @@ def init_NominalSpace(self, levels, var_name='d', name=None, default=None):
     self._set_levels()
 
 
-def init_ContinuousSpace(self, bounds, var_name='r', name=None, precision=None, default=None):
+def init_ContinuousSpace(self, bounds, var_name='r', name=None, precision=None,scale=None, default=None):
     super(ContinuousSpace, self).__init__(bounds, var_name, name, default)
     self.var_type = ['C'] * self.dim
     self._bounds = np.atleast_2d(self.bounds).T
@@ -109,7 +113,23 @@ def init_ContinuousSpace(self, bounds, var_name='r', name=None, precision=None, 
     else:
         if precision is not None:
             self.precision = {i: precision for i in range(self.dim)}
+    ##update 30/12/2020: BayesOpt change to bayes_optim
+        # set up the scale for each dimension
+        if scale is not None:
+            if isinstance(scale, str):
+                scale = [scale] * self.dim
+            elif hasattr(scale, '__iter__'):
+                assert len(scale) == self.dim
 
+            self.scale = {
+                i: scale[i] for i in range(self.dim) if scale[i] is not None
+            }
+
+        for i, s in self.scale.items():
+            lower, upper = self.bounds[i]
+            self.bounds[i] = (TRANS[s](lower), TRANS[s](upper))
+
+        self._bounds = np.atleast_2d(self.bounds).T
     assert all(self._bounds[0, :] < self._bounds[1, :])
 
 
@@ -206,10 +226,23 @@ def imputation(conditional, x, var_names, defaultvalue):
 
     return x, noCheckForb
 
-
-def evaluate(self, data):
+def evaluate(self, X):
     """Evaluate the candidate points and update evaluation info in the dataframe
     """
+    X = [self.formatCandidate(x) for x in X]
+    # Parallelization is handled by the objective function itself
+    if self.parallel_obj_fun is not None:
+        func_vals = self.parallel_obj_fun(X)
+    else:
+        if self.n_job > 1:  # or by ourselves..
+            func_vals = Parallel(n_jobs=self.n_job)(delayed(self.obj_fun)(x) for x in X)
+        else:  # or sequential execution
+            func_vals = [self.obj_fun(x) for x in X]
+
+    return func_vals
+'''def evaluate(self, data):
+    #"""Evaluate the candidate points and update evaluation info in the dataframe
+    #"""
     N = len(data)
     if self._eval_type == 'list':
         X = [x.tolist() for x in data]
@@ -218,17 +251,17 @@ def evaluate(self, data):
 
     # Parallelization is handled by the objective function itself
     X = [self.formatCandidate(x) for x in X]
-    if self.parallel_obj_func is not None:
-        func_vals = self.parallel_obj_func(X)
+    if self.parallel_obj_fun is not None:
+        func_vals = self.parallel_obj_fun(X)
     else:
         if self.n_job > 1:
-            func_vals = Parallel(n_jobs=self.n_job)(delayed(self.obj_func)(x) for x in X)
+            func_vals = Parallel(n_jobs=self.n_job)(delayed(self.obj_fun)(x) for x in X)
         else:
-            func_vals = [self.obj_func(x) for x in X]
+            func_vals = [self.obj_fun(x) for x in X]
 
     self.eval_count += N
     return func_vals
-
+'''
 
 def check_configuration(self, X):
     """
@@ -293,13 +326,13 @@ def check_configuration(self, X):
 
     return X[_]
 
-
+'''
 def BOrun_todict(self):
     while not self.check_stop():
         self.step()
 
     return self.xopt.to_dict(), self.xopt.fitness, self.stop_dict
-
+'''
 
 def _set_levels(self):
     """Set categorical levels for all nominal variables
@@ -309,3 +342,65 @@ def _set_levels(self):
         self._n_levels = {i: len(self.bounds[i]) for i in self.id_N}
     else:
         self.levels, self._n_levels = None, None
+
+
+def BayesOpt_tell(self, X, func_vals, warm_start=False):
+    """Tell the BO about the function values of proposed candidate solutions
+
+    Parameters
+    ----------
+    X : List of Lists or Solution
+        The candidate solutions which are usually proposed by the `self.ask` function
+    func_vals : List/np.ndarray of reals
+        The corresponding function values
+    """
+    X = self._to_geno(X)
+
+    if warm_start:
+        msg = 'warm-starting from {} points:'.format(len(X))
+    elif self.iter_count == 0:
+        msg = 'initial DoE of size {}:'.format(len(X))
+    else:
+        msg = 'iteration {}, {} infill points:'.format(self.iter_count, len(X))
+
+    self._logger.info(msg)
+    #         X_ = self._to_pheno(X)
+
+    for i in range(len(X)):
+        X[i].fitness = func_vals[i]
+        X[i].n_eval += 1
+
+        if not warm_start:
+            self.eval_count += 1
+
+        self._logger.info(
+            '#{} - fitness: {}, solution: {}'.format(
+                i + 1, func_vals[i], X[i].to_dict
+            )
+        )
+
+    X = self.post_eval_check(X)
+    self.data = self.data + X if hasattr(self, 'data') else X
+
+    if self.data_file is not None:
+        X.to_csv(self.data_file, header=False, append=True)
+
+    self.fopt = self._get_best(self.data.fitness)
+    _xopt = self.data[np.where(self.data.fitness == self.fopt)[0]]
+    self.xopt = self._to_pheno(_xopt)
+    if self._eval_type == 'dict':
+        self.xopt = self.xopt[0]
+
+    self._logger.info('fopt: {}'.format(self.fopt))
+    self._logger.info('xopt: {}'.format(self.xopt))
+
+    if not self.model.is_fitted:
+        self._fBest_DoE = copy(self.fopt)  # the best point in the DoE
+        self._xBest_DoE = copy(self.xopt)
+
+    r2 = self.update_model()
+    self._logger.info('Surrogate model r2: {}\n'.format(r2))
+
+    if not warm_start:
+        self.iter_count += 1
+        self.hist_f.append(self.fopt)

@@ -1,5 +1,5 @@
 from Component.mHyperopt import hp
-from BanditOpt.ConfigSpace import ConfigSpace, SearchSpace
+from BanditOpt.ConfigSpace import ConfigSpace, SearchSpace, ConditionalSpace
 import copy
 def ToHyperopt(search_space: list):
     if(len(search_space)<=1):
@@ -25,3 +25,14 @@ def ToHyperopt(search_space: list):
             # print('lstparams.append(cs)')
             Ls_hpOpt.append(copy.deepcopy(hOpt))
         return Ls_hpOpt
+'''def ToHyperopt(search_space: SearchSpace, AllConditional: dict(),BreakConditional:dict()):
+    lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb = [], [], [], [], []
+    for i, con in AllConditional.items():
+        #0:child, 1: parent, 2: parentValue
+        if ([con[1], con[2], con[0]] not in lsParentName):
+            lsParentName.append([con[1], con[2], con[0]])
+        if (con[0] not in childList):
+            childList.append(con[0])
+    lsRootNode = [x for x in lsParentName[1] if x not in childList]
+    for root in lsRootNode:
+        root'''

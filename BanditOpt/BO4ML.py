@@ -14,39 +14,46 @@ from BanditOpt.HyperoptConverter import ToHyperopt
 from BanditOpt import tpe
 class BO4ML(object):
     def __init__(self, search_space: ConfigSpace,
-                 obj_func,surrogate=None,
+                 obj_func,#surrogate=None,
                  conditional: ConditionalSpace = None,
                  forbidden:Forbidden = None,
                  eta=3,
                  SearchType="Bandit",
                  HPOopitmizer= "BayesOpt",
                  sp_cluster=0,
-                 parallel_obj_func=None,
+                 parallel_obj_fun=None,
+                 eq_fun=None,
+                 ineq_fun=None,
+                 model= None,
+                 eval_type='dict',
+                 DoE_size=None,
+                 warm_data=(),
+                 n_point=1,
+                 acquisition_fun='EI',
+                 acquisition_par={},
+                 acquisition_optimization={},
                  ftarget=None,
-                 eq_func=None,
-                 ineq_func=None,
+                 #max_FEs=None,
                  minimize=True,
                  max_eval=None,
-                 max_iter=None,
-                 init_points=None,
-                 warm_data=None,
-                 infill='EI',
-                 noisy=False,
-                 t0=2,
-                 tf=1e-1,
-                 schedule='exp',
-                 eval_type='dict',
+                 #max_iter=None,
+                 #init_points=None,
+                 #infill='EI',
+                 #noisy=False,
+                 #t0=2,
+                 #tf=1e-1,
+                 #schedule='exp',
                  n_init_sample=5,
-                 n_point=1,
                  n_job=1,
-                 n_restart=None,
-                 max_infill_eval=None,
-                 wait_iter=3,
-                 optimizer='MIES',
+                 #n_restart=None,
+                 #max_infill_eval=None,
+                 #wait_iter=3,
+                 #optimizer='MIES',
                  data_file=None,
                  verbose=False,
                  random_seed=None,
                  logger=None,
+                 hpo_max_eval=None,
                  hpo_algo= tpe,
                  hpo_trials= None,
                  hpo_pass_expr_memo_ctrl = None,
@@ -61,8 +68,8 @@ class BO4ML(object):
         self.eval_count = 0
         self.stop_dict = {}
         self.HPOopitmizer= HPOopitmizer
-
-        self.max_eval= max_eval
+        self.max_eval = max_eval
+        self.n_init_sample=n_init_sample
         self.sp_cluster=sp_cluster
         self.isminize=minimize
         #MIP-EGO:parameter
@@ -88,18 +95,20 @@ class BO4ML(object):
         self._lsincumbent = OrderedDict()
         self.opt = OrderedDict()
         self.BO4ML_kwargs = OrderedDict()
+        self.isHyperopt=False
         ###mHyperopt:
         if HPOopitmizer in ['hyperopt','Hyperopt','hpo','HyperOpt']:
+            self.isHyperopt=True
             self.HPO = {}
             self.HPO['obj_func']=obj_func
             HPOsearchspace = ToHyperopt(self.searchspace)
             self.searchspace=HPOsearchspace
             self.HPO['org_search_space'] = HPOsearchspace
             self.HPO['algo'] = hpo_algo
-            self.HPO['max_eval'] = max_eval
+            self.HPO['max_evals'] = max_eval
             self.HPO['trials']= hpo_trials
             self.HPO['rstate'] = random_seed
-            self.HPO['n_init_sample'] = n_init_sample
+            #self.HPO['n_init_sample'] = n_init_sample
             self.HPO['pass_expr_memo_ctrl']=hpo_pass_expr_memo_ctrl
             self.HPO['verbose']=hpo_verbose
             self.HPO['return_argmin']=hpo_return_argmin
@@ -107,31 +116,39 @@ class BO4ML(object):
             self.HPO['show_progressbar']=hpo_show_progressbar
         else:
             self.MIP = {}
+            if n_init_sample!=0:
+                DoE_size=n_init_sample
             self.MIP['isBandit'] = isBandit
-            self.MIP['obj_func'] = obj_func
-            self.MIP['surrogate'] = surrogate
-            self.MIP['parallel_obj_func'] = parallel_obj_func
+            self.MIP['obj_fun'] = obj_func
+            self.MIP['model']=model
+            self.MIP['DoE_size'] = DoE_size
+            self.MIP['acquisition_fun'] = acquisition_fun
+            self.MIP['acquisition_par'] = acquisition_par
+            self.MIP['acquisition_optimization'] = acquisition_optimization
+            self.MIP['max_FEs'] = max_eval
+            #self.MIP['surrogate'] = surrogate
+            self.MIP['parallel_obj_fun'] = parallel_obj_fun
             self.MIP['ftarget'] = ftarget
-            self.MIP['eq_func'] = eq_func
-            self.MIP['ineq_func'] = ineq_func
+            self.MIP['eq_fun'] = eq_fun
+            self.MIP['ineq_fun'] = ineq_fun
             self.MIP['minimize'] = minimize
-            self.MIP['max_eval'] = max_eval
-            self.MIP['max_iter'] = max_iter
-            self.MIP['init_points'] = init_points
+            #self.MIP['max_eval'] = max_eval
+            #self.MIP['max_iter'] = max_iter
+            #self.MIP['init_points'] = init_points
             self.MIP['warm_data'] = warm_data
-            self.MIP['infill'] = infill
-            self.MIP['noisy'] = noisy
-            self.MIP['t0'] = t0
-            self.MIP['tf'] = tf
-            self.MIP['schedule'] = schedule
+            #self.MIP['infill'] = infill
+            #self.MIP['noisy'] = noisy
+            #self.MIP['t0'] = t0
+            #self.MIP['tf'] = tf
+            #self.MIP['schedule'] = schedule
             self.MIP['eval_type'] = eval_type
-            self.MIP['n_init_sample'] = n_init_sample
+            #self.MIP['n_init_sample'] = n_init_sample
             self.MIP['n_point'] = n_point
             self.MIP['n_job'] = n_job
-            self.MIP['n_restart'] = n_restart
-            self.MIP['max_infill_eval'] = max_infill_eval
-            self.MIP['wait_iter'] = wait_iter
-            self.MIP['optimizer'] = optimizer
+            #self.MIP['n_restart'] = n_restart
+            #self.MIP['max_infill_eval'] = max_infill_eval
+            #self.MIP['wait_iter'] = wait_iter
+            #self.MIP['optimizer'] = optimizer
             self.MIP['data_file'] = data_file
             self.MIP['verbose'] = verbose
             self.MIP['random_seed'] = random_seed
@@ -139,23 +156,25 @@ class BO4ML(object):
             self.MIP['forbidden'] = forbidden
             self.MIP['conditional'] = conditional
             self.MIP['hyperparameters'] = search_space
+
     def run(self):
-        if(self.HPOopitmizer=='hyperopt'):
-            if (self.isBandit==True):
-                return self.runHO4ML()
-        else:
-            if (self.isBandit==True):
-                if((self.sp_cluster>0 )and (self.sp_cluster**3 >self.max_eval)):
-                #if (len(self.searchspace) * self.MIP['n_point'] * self.MIP['n_init_sample'] > self.max_eval):
-                    print("NOT ENOUGH BUDGET for: " + str(len(self.searchspace)) + "search spaces")
-                    return None, None, None, None
-                else:
-                    return self.runBO4ML()
+        '''if(self.HPOopitmizer in ['hyperopt','Hyperopt','hpo','HyperOpt']):
+            if (self.isBandit==False):
+                print('NOT implement yet!, please use hyperopt instead')
+                #return self.runHO()
+        else:'''
+        if (self.isBandit == True):
+            if ((self.sp_cluster > 0) and (self.sp_cluster ** 3 > self.max_eval)):
+                # if (len(self.searchspace) * self.MIP['n_point'] * self.MIP['n_init_sample'] > self.max_eval):
+                print("NOT ENOUGH BUDGET for: " + str(len(self.searchspace)) + "search spaces")
+                return None, None, None, None
             else:
-                return self.runBO(self.searchspace)
+                return self.runBO4ML()
+        else:
+            return self.runBO(self.searchspace)
 
     def runBO(self, search_space):
-        if (self.HPOopitmizer=='hyperopt'):
+        if (self.isHyperopt):
             self.HPO['sp_id'] = 0
             self.HPO['search_space'] = search_space
             kwargs = self.HPO
@@ -172,15 +191,28 @@ class BO4ML(object):
             sp_id = self.searchspace.index(sp)
             if 'kwargs' in locals():
                 kwargs.clear()
-            kwargs=copy.deepcopy(self.MIP)
-            kwargs['sp_id'] = sp_id
-            kwargs['search_space'] = sp
-            if (kwargs['n_point']>1):
-                kwargs['max_eval']= kwargs['n_init_sample'] +1
+            if (self.isHyperopt):
+                trials = Trials()
+                kwargs = copy.deepcopy(self.HPO)
+                kwargs['sp_id'] = sp_id
+                kwargs['search_space'] = sp
+                kwargs['max_eval'] = self.n_init_sample
+                kwargs['trials'] = trials
+
+                self.BO4ML_kwargs[sp_id] = copy.deepcopy(kwargs)
+                self.opt[sp_id] = HO.HyperOpt(**kwargs)
             else:
-                kwargs['max_eval']= kwargs['n_init_sample']
-            self.BO4ML_kwargs[sp_id] = copy.deepcopy(kwargs)
-            self.opt[sp_id] = MIP.BayesOpt(**kwargs)
+                kwargs=copy.deepcopy(self.MIP)
+                kwargs['sp_id'] = sp_id
+                kwargs['search_space'] = sp
+                kwargs['max_eval'] = self.n_init_sample
+                '''if (kwargs['n_point']>1):
+                    kwargs['max_eval']= kwargs['n_init_sample'] +1
+                else:
+                    kwargs['max_eval']= kwargs['n_init_sample']'''
+                self.BO4ML_kwargs[sp_id] = copy.deepcopy(kwargs)
+                self.opt[sp_id] = MIP.BayesOpt(**kwargs)
+
             #funcType=type(BO.BayesOpt.pre_eval_check)
             #self.opt[sp_id].pre_eval_check = funcType(ext.check_configuration,self.opt[sp_id],BO.BayesOpt)
             try:
@@ -202,7 +234,7 @@ class BO4ML(object):
         for iround, num_candidate in lsRace.items():
             cd_add_eval = int(floor(eval_race / num_candidate))
             print("Round: ", iround + 1, ", Candidates:", num_candidate, "Func Eval/candidate:",cd_add_eval)
-            if (self.MIP['minimize'] == True):
+            if (self.isminize == True):
                 lsThisRound = list(OrderedDict(sorted(self._lsCurrentBest.items(), key=lambda item: item[1])).items())[
                               :num_candidate]
             else:
@@ -214,7 +246,10 @@ class BO4ML(object):
                     remain_eval = self.max_eval - self.eval_count
                     cd_add_eval = max(cd_add_eval,remain_eval)
                 print("previous best loss was:", bestloss, "of", cdid)
-                cd_ran_eval = self.opt[cdid].BO.eval_count
+                if(self.isHyperopt):
+                    cd_ran_eval = len(self.opt[cdid].trials)
+                else:
+                    cd_ran_eval = self.opt[cdid].BO.eval_count
                 try:
                     xopt, fopt, stop_dict,ieval_count = self.opt[cdid].AddBudget_run(cd_add_eval,iround)
                     self._lsincumbent[cdid] = xopt
@@ -235,7 +270,7 @@ class BO4ML(object):
             print("Additional round, Runing: 1 Candidate")
             shortLst = OrderedDict([f for f in self._lsCurrentBest.items() if f[0] not in errIDs])
             errList = []
-            if (self.MIP['minimize'] == True):
+            if (self.isminize  == True):
                 lsThisRound = list(OrderedDict(sorted(shortLst.items(), key=lambda item: item[1])).items())[:1]
             else:
                 lsThisRound = list(OrderedDict(sorted(shortLst.items(), key=lambda item: item[1],
@@ -270,7 +305,7 @@ class BO4ML(object):
                 self.eval_count += cd_add_eval
                 self._lsCurrentBest[cdid] = fopt
         # conclusion
-        if (self.MIP['minimize'] == True):
+        if (self.isminize  == True):
             lsThisRound = list(OrderedDict(sorted(self._lsCurrentBest.items(), key=lambda item: item[1])).items())[:1]
         else:
             lsThisRound = list(OrderedDict(sorted(self._lsCurrentBest.items(), key=lambda item: item[1],
@@ -278,7 +313,7 @@ class BO4ML(object):
         best_cdid = lsThisRound[0][0]
         best_incumbent, best_value = self._lsincumbent[best_cdid], self._lsCurrentBest[best_cdid]
         return best_incumbent, best_value, "_", self.eval_count
-    def runHO4ML(self):
+    '''def runHO4ML(self):
 
         for sp in self.searchspace:
             sp_id = self.searchspace.index(sp)
@@ -288,7 +323,7 @@ class BO4ML(object):
             kwargs=copy.deepcopy(self.HPO)
             kwargs['sp_id'] = sp_id
             kwargs['search_space'] = sp
-            kwargs['max_eval']= kwargs['n_init_sample']
+            kwargs['max_eval']= self.n_init_sample
             kwargs['trials'] = trials
             self.BO4ML_kwargs[sp_id] = copy.deepcopy(kwargs)
             self.opt[sp_id] = HO.HyperOpt(**kwargs)
@@ -390,6 +425,7 @@ class BO4ML(object):
         best_incumbent, best_value = self._lsincumbent[best_cdid], self._lsCurrentBest[best_cdid]
         lstrials=[x.trials for _,x in self.opt.items()]
         return best_incumbent, best_value, lstrials, self.eval_count
+    '''
     def mega_stop(self):
         if self.iter_count >= self.max_iter:
             self.stop_dict['max_iter'] = True
@@ -454,7 +490,7 @@ if __name__ == '__main__':
     y = iris.target
 
     def new_obj(params):
-        print(params)
+        #print(params)
         return (np.random.uniform(0,1))
     def obj_func(params):
         params = {k: params[k] for k in params if params[k]}
@@ -472,11 +508,10 @@ if __name__ == '__main__':
         loss = 1 - mean
         # print (mean)
         return loss
-    #opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=30, verbose=False, n_job=1, n_point=1,
-              #  n_init_sample=5)
+    #opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=50)
     suggest = tpe.suggest
     opt = BO4ML(search_space, new_obj, forbidden=fobr, conditional=con, SearchType="Bandit",
                 HPOopitmizer='hyperopt', max_eval=30,hpo_algo=suggest)
     xopt, fopt, _, eval_count = opt.run()
-    print(fopt)
+    print(xopt,fopt)
 
