@@ -510,6 +510,7 @@ class ConfigSpace(object):
             if (sp_cluster>0 and len(final)>sp_cluster):
                 final=self._clustering(final,sp_cluster)
                 for group in final:
+                    defaults = []
                     for _,item in group.items():
                         #if (item.iskeep == True):
                             #FinalSP[item.var_name[0]] = item
@@ -517,10 +518,13 @@ class ConfigSpace(object):
                             space = item
                         else:
                             space = space + item
+                        defaults.append(item.default)
+                    space.default = defaults
                     lsFinalSP.append(space)
                     del space
             else:
                 for searchSpace in final:
+                    defaults = []
                     for group in searchSpace:
                         for item in group:
                             #if (item.iskeep == True):
@@ -529,12 +533,15 @@ class ConfigSpace(object):
                                 space = item
                             else:
                                 space = space + item
+                            defaults.append(item.default)
+                    space.default=defaults
                     lsFinalSP.append(space)
                     del space
         elif(len(MixList)==1):
             final=list(MixList)
             for searchSpace in final:
                 for group in searchSpace:
+                    defaults = []
                     for item in group:
                         if (item.iskeep == True):
                             FinalSP[item.var_name[0]] = item
@@ -542,6 +549,8 @@ class ConfigSpace(object):
                                 space = item
                             else:
                                 space = space + item
+                            defaults.append(item.default)
+                    space.default = defaults
                     lsFinalSP.append(space)
                     del space
         else:
@@ -594,11 +603,14 @@ class ConfigSpace(object):
         else:
             self._listconditional = Conditional
             self._listForbidden = Forbidden
+            defaults=[]
             for _,item in self._hyperparameters.items():
                 if 'space' not in locals():
                     space = item
                 else:
                     space = space + item
+                defaults.append(item.default)
+            space.default = defaults
             return space
     def combinewithconditional(self, cons: ConditionalSpace = None, forb: Forbidden = None,sp_cluster=0, ifAllSolution=True) -> List[SearchSpace]:
         self._listconditional=cons

@@ -183,7 +183,6 @@ class BO4ML(object):
             kwargs = copy.deepcopy(self.HPO)
             kwargs['sp_id'] = 0
             kwargs['search_space'] = search_space
-            kwargs['max_evals'] = self.n_init_sample
             kwargs['trials'] = trials
             BO = HO.HyperOpt(**kwargs)
         else:
@@ -212,7 +211,7 @@ class BO4ML(object):
                 kwargs=copy.deepcopy(self.MIP)
                 kwargs['sp_id'] = sp_id
                 kwargs['search_space'] = sp
-                kwargs['max_eval'] = self.n_init_sample
+                kwargs['max_FEs'] = self.n_init_sample
                 '''if (kwargs['n_point']>1):
                     kwargs['max_eval']= kwargs['n_init_sample'] +1
                 else:
@@ -408,8 +407,8 @@ if __name__ == '__main__':
         return loss
     #opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=50)
     suggest = tpe.suggest
-    opt = BO4ML(search_space, new_obj, forbidden=fobr, conditional=con, SearchType="Bandit",
-                HPOopitmizer='hyperopt', max_eval=30,hpo_algo=suggest)
+    opt = BO4ML(search_space, new_obj, forbidden=fobr, conditional=con, SearchType="NoBandit",
+                HPOopitmizer='hyperopt', max_eval=50,hpo_algo=suggest)
     xopt, fopt, _, eval_count = opt.run()
     print(xopt,fopt)
 
