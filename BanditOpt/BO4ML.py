@@ -10,7 +10,7 @@ import Component.mHyperopt.hyperopt as HO
 from Component.BayesOpt import RandomForest
 from Component.BayesOpt import ContinuousSpace,OrdinalSpace,NominalSpace,SearchSpace
 from BanditOpt.Forbidden import Forbidden
-from BanditOpt.HyperoptConverter import ToHyperopt
+from BanditOpt.HyperoptConverter import SubToHyperopt, OrginalToHyperopt
 from BanditOpt import tpe
 class BO4ML(object):
     def __init__(self, search_space: ConfigSpace,
@@ -54,6 +54,7 @@ class BO4ML(object):
                  random_seed=None,
                  logger=None,
                  hpo_max_eval=None,
+                 hpo_prefix='value',
                  hpo_algo= tpe,
                  hpo_trials= None,
                  hpo_pass_expr_memo_ctrl = None,
@@ -101,7 +102,10 @@ class BO4ML(object):
             self.isHyperopt=True
             self.HPO = {}
             self.HPO['obj_func']=obj_func
-            HPOsearchspace = ToHyperopt(self.searchspace)
+            if(isBandit):
+                HPOsearchspace = SubToHyperopt(self.searchspace, conditional,hpo_prefix)
+            else:
+                HPOsearchspace = OrginalToHyperopt(search_space, conditional,hpo_prefix)
             self.searchspace=HPOsearchspace
             self.HPO['org_search_space'] = HPOsearchspace
             self.HPO['algo'] = hpo_algo
@@ -401,7 +405,7 @@ if __name__ == '__main__':
         return loss
     #opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=50)
     suggest = tpe.suggest
-    opt = BO4ML(search_space, new_obj, forbidden=fobr, conditional=con, SearchType="Bandit",
+    opt = BO4ML(search_space, new_obj, forbidden=fobr, conditional=con, SearchType="NOBandit",
                 HPOopitmizer='hyperopt', max_eval=30,hpo_algo=suggest)
     xopt, fopt, _, eval_count = opt.run()
     print(xopt,fopt)
