@@ -783,6 +783,7 @@ if __name__ == '__main__':
     p = OrdinalSpace([1, 200], "p")
     metric = NominalSpace(['euclidean', 'manhattan', 'chebyshev', 'minkowski'], "metric")
     # p_sub_type = name
+
     cs.add_multiparameter([n_neighbors, weights, algorithm, leaf_size, p, metric])
     con.addMutilConditional([n_neighbors, weights, algorithm, leaf_size, p, metric], alg_name, ['KNN'])
 

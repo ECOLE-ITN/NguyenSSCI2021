@@ -13,8 +13,11 @@ class ConditionalSpace(object):
     def addMutilConditional(self, child: List[SearchSpace] = None, parent: SearchSpace = None, parent_value=None, isRoot=True):
         for achild in child:
             self.addConditional(achild, parent, parent_value,isRoot)
+    def rebuild(self):
+        pass
 
-    def addConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None, isRoot=True):
+
+    def addConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None, isRoot=None):
         if not isinstance(child, SearchSpace):
             raise TypeError("Hyperparameter '%s' is not an instance of "
                             "mipego.SearchSpace" %
@@ -30,25 +33,46 @@ class ConditionalSpace(object):
         else:
             self._addAllConditional(child, parent, parent_value)
         #list of conditional for treezation only
-        if isRoot==True:
-            if (keyname in self.conditional.keys()):
-                self._updateConditional(child, parent, parent_value)
+        if (isRoot==None):
+            if (child.var_name[0] in [x[0] for i,x in self.conditional.items()]):
+                isRoot=False
             else:
-                self._addConditional(child, parent, parent_value)
-    def _updateConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None) -> None:
-        if not isinstance(parent_value, (list, tuple)):
-            parent_value=list(parent_value)
-        keyname = str(child.var_name[0]) + '_' + str(parent.var_name[0])
-        old_value= self.conditional[keyname][2]
-        parent_value= parent_value + old_value
-        self.conditional[keyname] = [
-            child.var_name[0], parent.var_name[0],
-            parent_value]
-    def _addConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None) -> None:
+                isRoot=True
+        #if isRoot==True:
+        if (keyname in self.conditional.keys()):
+            self._updateConditional(child, parent, parent_value, isRoot)
+        else:
+            self._addConditional(child, parent, parent_value, isRoot)
+    def _updateConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None, isRoot=True) -> None:
+        if isRoot==True:
+            if not isinstance(parent_value, (list, tuple)):
+                parent_value=list(parent_value)
+            keyname = str(child.var_name[0]) + '_' + str(parent.var_name[0])
+            old_value= self.conditional[keyname][2]
+            parent_value= parent_value + old_value
+            self.conditional[keyname] = [
+                child.var_name[0], parent.var_name[0],
+                parent_value]
+        else:
+            pass
+    def _addConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None, isRoot=True) -> None:
         if not isinstance(parent_value, (list, tuple)):
             parent_value=list([parent_value])
         keyname = str(child.var_name[0]) + '_' + str(parent.var_name[0])
-        self.conditional[keyname] = [child.var_name[0], parent.var_name[0],parent_value]
+
+        #if its parent has parent, add this child to all parents of its parent
+        if(parent.var_name[0] in [x[0] for _,x in self.conditional.items()]):
+            for x in [x for _,x in self.conditional.items() if x[0]==parent.var_name[0]]:
+                keyname = str(child.var_name[0]) + '_' + str(x[1])
+                if (keyname in self.conditional.keys()):
+                    old_value = self.conditional[keyname][2]
+                    parent_value = old_value+ list( set(old_value)-set(x[2]) )
+                    self.conditional[keyname] = [
+                        child.var_name[0], x[1],parent_value]
+                else:
+                    self.conditional[keyname]=[child.var_name[0],x[1],x[2]]
+        if(isRoot==True):
+            self.conditional[keyname] = [child.var_name[0], parent.var_name[0], parent_value]
         #else:
             #self.conditional[str(child.var_name[0]) + '_' + str(parent.var_name[0]) + '_' + "".join(parent_value)] = [
              #   child.var_name[0], parent.var_name[0],

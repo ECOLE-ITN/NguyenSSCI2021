@@ -364,15 +364,15 @@ if __name__ == '__main__':
     criterion = NominalSpace(["gini", "entropy"], "criterion")
     max_depth = OrdinalSpace([10, 200], "max_depth")
     max_features = NominalSpace(['auto', 'sqrt', 'log2'], "max_features")
-
+    alone = NominalSpace(['A1', 'A2', 'A3'], "alone")
     # Add Search space to Configuraion Space
     search_space.add_multiparameter([alg_namestr, kernel, C, degree, coef0, gamma
-                                        , n_estimators, criterion, max_depth, max_features, test])
+                                        , n_estimators, criterion, max_depth, max_features, test,alone])
     # Define conditional Space
     con = ConditionalSpace("conditional")
-    con.addMutilConditional([kernel, C, degree, coef0, gamma, test], alg_namestr, ["SVM"])
+    con.addMutilConditional([kernel, C, degree, coef0, test], alg_namestr, ["SVM"])
     con.addMutilConditional([n_estimators, criterion, max_depth, max_features], alg_namestr, ["RF"])
-    con.addConditional(gamma,test,'A',False)
+    con.addConditional(gamma,test,'A')
     fobr = Forbidden()
     fobr.addForbidden(max_features, "auto", criterion, "gini")
     fobr.addForbidden(test,"A",kernel,"linear")
