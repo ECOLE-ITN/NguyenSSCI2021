@@ -60,7 +60,7 @@ class BO4ML(object):
                  hpo_pass_expr_memo_ctrl = None,
                  hpo_verbose = 0,
                  hpo_max_queue_len =1,
-                 hpo_show_progressbar=False,
+                 hpo_show_progressbar=True,
                  hpo_return_argmin=True
                  ):
         #Hyperband: parameter
@@ -179,9 +179,12 @@ class BO4ML(object):
 
     def runBO(self, search_space):
         if (self.isHyperopt):
-            self.HPO['sp_id'] = 0
-            self.HPO['search_space'] = search_space
-            kwargs = self.HPO
+            trials = Trials()
+            kwargs = copy.deepcopy(self.HPO)
+            kwargs['sp_id'] = 0
+            kwargs['search_space'] = search_space
+            kwargs['max_evals'] = self.n_init_sample
+            kwargs['trials'] = trials
             BO = HO.HyperOpt(**kwargs)
         else:
             self.MIP['sp_id'] = 0
@@ -200,7 +203,7 @@ class BO4ML(object):
                 kwargs = copy.deepcopy(self.HPO)
                 kwargs['sp_id'] = sp_id
                 kwargs['search_space'] = sp
-                kwargs['max_eval'] = self.n_init_sample
+                kwargs['max_evals'] = self.n_init_sample
                 kwargs['trials'] = trials
 
                 self.BO4ML_kwargs[sp_id] = copy.deepcopy(kwargs)
@@ -385,7 +388,7 @@ if __name__ == '__main__':
     y = iris.target
 
     def new_obj(params):
-        #print(params)
+        print(params)
         return (np.random.uniform(0,1))
     def obj_func(params):
         params = {k: params[k] for k in params if params[k]}
@@ -405,7 +408,7 @@ if __name__ == '__main__':
         return loss
     #opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=50)
     suggest = tpe.suggest
-    opt = BO4ML(search_space, new_obj, forbidden=fobr, conditional=con, SearchType="NOBandit",
+    opt = BO4ML(search_space, new_obj, forbidden=fobr, conditional=con, SearchType="Bandit",
                 HPOopitmizer='hyperopt', max_eval=30,hpo_algo=suggest)
     xopt, fopt, _, eval_count = opt.run()
     print(xopt,fopt)

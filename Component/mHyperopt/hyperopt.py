@@ -6,7 +6,7 @@ class HyperOpt(object):
 
     def run(self,round_id=0):
         self.fmin = hyperopt.fmin(fn=self.obj_func, space=self.search_space, algo=self.algo,
-                                 max_evals=self.max_eval, trials=self.trials, rstate=self.rstate,
+                                 max_evals=self.max_evals, trials=self.trials, rstate=self.rstate,
                                  pass_expr_memo_ctrl=self.pass_expr_memo_ctrl, verbose=self.verbose,
                                  return_argmin=self.return_argmin, max_queue_len=self.max_queue_len,
                                  show_progressbar=self.show_progressbar)
@@ -15,5 +15,6 @@ class HyperOpt(object):
         self.ieval_count=len(xcatch)
         return self.fmin,self.fopt,None, self.ieval_count
     def AddBudget_run(self,add_eval, round_id=1):
-        self.max_eval += add_eval
+        self.max_evals += add_eval
         return self.run(round_id)
+

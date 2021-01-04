@@ -1,5 +1,5 @@
 from Component.mHyperopt import hp
-from BanditOpt.ConfigSpace import ConfigSpace, SearchSpace, ConditionalSpace
+from BanditOpt.ConfigSpace import ConfigSpace, SearchSpace, ConditionalSpace, NominalSpace, ContinuousSpace, OrdinalSpace
 import copy
 import numpy as np
 
@@ -72,7 +72,11 @@ def SubToHyperopt(search_space: list, con: ConditionalSpace, prefix='value'):
                         # print(xxx)
                         finaldict[x[0]].append(xxx[x[0]][0])
             hOpt = _formatsingle(finaldict, None, None, sp, ls,prefix)
-            Ls_hpOpt.append(copy.deepcopy(hOpt))
+            if(len(hOpt)>1):
+                hOpt_joint= hp.choice('rootxxxx', [hOpt])
+            else:
+                hOpt_joint=hOpt
+            Ls_hpOpt.append(copy.deepcopy(hOpt_joint))
     return Ls_hpOpt
 '''def ToHyperopt(search_space: SearchSpace, AllConditional: dict(),BreakConditional:dict()):
     lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb = [], [], [], [], []
@@ -104,7 +108,7 @@ def OrginalToHyperopt(search_space: SearchSpace, con: ConditionalSpace, prefix='
             lsParentName.append([[x, itemValues], None])
     for vName in lsRootNode:
         itemValues = sp[vName].bounds[0]
-        print(vName, itemValues)
+        #print(vName, itemValues)
         itemThisNode = [x[1] for x, _ in lsParentName if x[0] == vName]
         item_noCons = []
         if (len(itemThisNode) > 0):
@@ -112,7 +116,7 @@ def OrginalToHyperopt(search_space: SearchSpace, con: ConditionalSpace, prefix='
             for item in itemThisNode:
                 itemThisNode2 += item
             item_noCons = [x for x in itemValues if x not in itemThisNode2]
-            print(itemThisNode2)
+            #print(itemThisNode2)
         if (len(item_noCons) > 0):
             if (len(item_noCons) < 2):
                 #print('+++', vName)
@@ -126,34 +130,38 @@ def OrginalToHyperopt(search_space: SearchSpace, con: ConditionalSpace, prefix='
         if (x not in lsr):
             #print(x)
             lsr.append(x)
-            xxx = _xxx(x[0], x[0], x[1], None, lsParentName, sp)
+            xxx = _xxx(x[0], x[0], x[1], None, lsParentName, sp,prefix)
             if (x[0] not in finaldict.keys()):
                 finaldict.update(xxx)
             else:
                 # print(xxx)
                 finaldict[x[0]].append(xxx[x[0]][0])
-    finasp=_format(finaldict,None,None,sp)
-    return finasp
-def _xxx(rootname, node, value, parent, lsParentName,sp):
+    finasp=_format(finaldict,None,None,sp,prefix)
+    if(len(finasp)>1):
+        jointsp = hp.choice('rootxxxx', [finasp])
+    else:
+        jointsp=finasp
+    return jointsp
+def _xxx(rootname, node, value, parent, lsParentName,sp,prefix):
     child_hpa, child_node = _getchilds(node, value, lsParentName,sp)
     thisnode=dict()
     isExist=False
     if(len(child_hpa)>0):
         fnode=node
-        thisnode[node]=[{'value':value}]
+        thisnode[node]=[{prefix:value}]
         for child in child_node:
             hpa, _ = _getchilds(child[0],child[1], lsParentName,sp)
             childnode=dict()
             if(len(hpa)>0):
-                childnode=_xxx(rootname, child[0],child[1],node, lsParentName,sp)
+                childnode=_xxx(rootname, child[0],child[1],node, lsParentName,sp,prefix)
             else:
                 if(child[0] in thisnode[node][0].keys()):
-                    childnode['value']=child[1]
+                    childnode[prefix]=child[1]
                     isExist=True
                 else:
                     childnode[child[0]]=child[1]
             if (child[0] in thisnode[node][0].keys()):
-                if(list(childnode.keys())[0]!='value'):
+                if(list(childnode.keys())[0]!=prefix):
                     first_value = next(iter(childnode.values()))
                     thisnode[node][0][child[0]].append(first_value[0])
                 else:
@@ -162,7 +170,7 @@ def _xxx(rootname, node, value, parent, lsParentName,sp):
                 thisnode[node][0].update(childnode)
     else:
         if(len([x for x,_ in lsParentName if x[0]==node])>1):
-            thisnode[node]=[{'value':value}]
+            thisnode[node]=[{prefix:value}]
         else:
             thisnode[node]=value
     return thisnode
@@ -181,33 +189,35 @@ def _getchilds(node, value,lsParentName,sp):
         #print(thisChild)
             child_node.append(thisChild)
     return child_hpa, child_node
-def _format(node,alg,parent, sp):
+def _format(node,alg,parent, sp, prefix):
     fnode=node
     thisnode=dict()
     #print(node,alg)
     if (isinstance(fnode, list)):
         childlst=[]
         for x in fnode:
-            child=_format(x,alg,alg, sp)
+            child=_format(x,alg,alg, sp,prefix)
             childlst.append(child)
         thisnode[alg]=hp.choice(alg,childlst)
     elif(isinstance(fnode,dict)):
         childlst=dict()
         for i,v in fnode.items():
             #print('==>',i,v)
-            child=_format(v,i,alg, sp)
+            child=_format(v,i,alg, sp,prefix)
             childlst.update(child)
         return childlst
     else:
-        bkalg=alg
-        if(alg=='value'):
-            alg=parent
+        bkalg = alg
+        bkparam = alg
+        if (alg == prefix):
+            bkparam = alg + "".join(node)
+            alg = parent
         if (isinstance(sp[alg],NominalSpace)):
-            thisnode[bkalg]=hp.choice(bkalg,node)
+            thisnode[bkalg]=hp.choice(bkparam,node)
         elif(isinstance(sp[alg],ContinuousSpace)):
-            thisnode[bkalg]=hp.uniform(bkalg,float(node[0]),float(node[1]))
+            thisnode[bkalg]=hp.uniform(bkparam,float(node[0]),float(node[1]))
         elif(isinstance(sp[alg],OrdinalSpace)):
-            thisnode[bkalg]=hp.choice(bkalg, range(int(node[0]),int(node[1])))
+            thisnode[bkalg]=hp.choice(bkparam, range(int(node[0]),int(node[1])))
     return thisnode
 def _xxxsingle(rootname, node, value, parent, prefix, lsParentName,sp):
     child_hpa, child_node = _getchilds_single(node, value, lsParentName,sp)
@@ -274,9 +284,11 @@ def _formatsingle(node,alg,parent, sp,productspace, prefix='value'):
             childlst.update(child)
         return childlst
     else:
-        bkalg=alg
-        if(alg==prefix):
-            alg=parent
+        bkalg = alg
+        bkparam = alg
+        if (alg == prefix):
+            bkparam = alg + "".join(node)
+            alg = parent
         idx = productspace.var_name.index(alg)
         typex=''
         if (idx in productspace.id_C):
@@ -286,63 +298,43 @@ def _formatsingle(node,alg,parent, sp,productspace, prefix='value'):
         elif(idx in productspace.id_O):
             typex='O'
         if (typex=='N'):
-            thisnode[bkalg]=hp.choice(bkalg,node)
+            thisnode[bkalg]=hp.choice(bkparam,node)
         elif(typex=='O'):
-            thisnode[bkalg]=hp.uniform(bkalg,float(node[0]),float(node[1]))
+            thisnode[bkalg]=hp.uniform(bkparam,float(node[0]),float(node[1]))
         elif(typex=='N'):
-            thisnode[bkalg]=hp.choice(bkalg, range(int(node[0]),int(node[1])))
+            thisnode[bkalg]=hp.choice(bkparam, range(int(node[0]),int(node[1])))
     return thisnode
 if __name__ == '__main__':
-    from sklearn import datasets
-    from sklearn.svm import SVC
-    from sklearn.model_selection import cross_val_score
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.ensemble import RandomForestClassifier
-    from Component.mHyperopt import tpe, rand, Trials
-    from BanditOpt import NominalSpace,OrdinalSpace,ContinuousSpace, ConditionalSpace, Forbidden
-    from BanditOpt import hp
-    import warnings
-    from hyperopt.pyll.stochastic import sample
+    from hyperopt import hp, tpe, rand, Trials
+    import numpy as np
+    randomstate=12
+    Hspace = hp.choice('classifier_type', [
+        {
+            'type': hp.choice('type', ['naive_bayes', 'A', 'B']),
+        },
+        {
+            'type': 'svm',
+            'C': hp.lognormal('svm_C', 0, 1),
+            'kernel': hp.choice('svm_kernel', [
+                {'type': 'linear'},
+                {'type': 'RBF', 'width': hp.lognormal('svm_rbf_width', 0, 1)},
+            ]),
+        },
+        {
+            'type': 'dtree',
+            'criterion': hp.choice('dtree_criterion', ['gini', 'entropy']),
+            'max_depth': hp.choice('dtree_max_depth',
+                                   [None, hp.qlognormal('dtree_max_depth_int', 3, 1, 1)]),
+            'min_samples_split': hp.qlognormal('dtree_min_samples_split', 2, 1, 1),
+        },
+    ])
 
-    warnings.filterwarnings("ignore")
-    search_space = ConfigSpace()
+    from hyperopt import fmin, tpe
 
-    # Define Search Space
-    alg_namestr = NominalSpace(["SVM", "RF", 'NONE', 'NOT'], "alg_namestr")
 
-    # Define Search Space for Support Vector Machine
-    kernel = NominalSpace(["linear", "rbf"], "kernel")
-    test = NominalSpace(["TestA", "TestB"], "test")
-    C = ContinuousSpace([1e-2, 100], "C")
-    degree = OrdinalSpace([1, 5], 'degree')
-    coef0 = ContinuousSpace([0.0, 10.0], 'coef0')
-    gamma = NominalSpace(['GD', 'GE', 'GF'], 'gamma')
-    # Define Search Space for Random Forest
-    n_estimators = OrdinalSpace([5, 100], "n_estimators")
-    criterion = NominalSpace(["gini", "entropy"], "criterion")
-    max_depth = OrdinalSpace([10, 200], "max_depth")
-    max_features = NominalSpace(['auto', 'sqrt', 'log2'], "max_features")
-    alone = NominalSpace(['A1', 'A2', 'A3'], "alone")
-    tc = NominalSpace(['TC1', 'TC2', 'TC3'], "tc")
-    # Add Search space to Configuraion Space
-    search_space.add_multiparameter([alg_namestr, kernel, C, degree, coef0, gamma
-                                        , n_estimators, criterion, max_depth, max_features, test, alone, tc])
-    # Define conditional Space
-    con = ConditionalSpace("conditional")
-    con.addMutilConditional([kernel, C, degree, coef0, test], alg_namestr, ["SVM"])
-    con.addMutilConditional([n_estimators, criterion, max_depth, max_features], alg_namestr, ["RF"])
-    con.addConditional(tc, test, 'TestB', False)
-    con.addConditional(gamma, tc, 'TC1', False)
-    # con.addConditional(alone,gamma,'E',False)
-    fobr = Forbidden()
-    fobr.addForbidden(max_features, "auto", criterion, "gini")
-    fobr.addForbidden(test, "TestA", kernel, "linear")
-    searchSpace = search_space.Combine(con, fobr, True)
-    hpos=OrginalToHyperopt(search_space,con)
-    searchSpace = search_space.Combine(con, fobr, True)
-    i=0
-    while (i<10):
-        i+=1
-        print(sample(hpos))
-    lsOptSP=ToHyperopt(searchSpace,con)
-    print(lsOptSP)
+    def new_obj(params):
+        print(params)
+        return (np.random.uniform(0, 1))
+
+
+    best_candidate = fmin(new_obj, Hspace, algo=tpe.suggest, max_queue_len=4, max_evals=20)
