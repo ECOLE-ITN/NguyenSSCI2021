@@ -43,7 +43,7 @@ X = iris.data
 y = iris.target
 
 def new_obj(params):
-    #print(params)
+    print(params)
     return (np.random.uniform(0,1))
 def obj_func(params):
     params = {k: params[k] for k in params if params[k]}
@@ -61,9 +61,9 @@ def obj_func(params):
     loss = 1 - mean
     # print (mean)
     return loss
-#opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=50)
+opt = BO4ML(search_space, new_obj,forbidden=fobr,conditional=con,SearchType="Bandit", max_eval=50)
 suggest = tpe.suggest
-opt = BO4ML(search_space, new_obj, forbidden=fobr, conditional=con, SearchType="VBandit",
-            HPOopitmizer='hyperopt', max_eval=30,hpo_algo=suggest, hpo_show_progressbar=True)
+#opt = BO4ML(search_space, new_obj, forbidden=None, conditional=None, SearchType="Bandit",
+    #        HPOopitmizer='hyperopt', max_eval=30,hpo_algo=suggest, hpo_show_progressbar=True)
 xopt, fopt, _, eval_count = opt.run()
 print(xopt,fopt)
