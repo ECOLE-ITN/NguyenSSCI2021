@@ -6,7 +6,10 @@ import numpy as np
 def SubToHyperopt(search_space: list, con: ConditionalSpace, prefix='value'):
     Ls_hpOpt = []
     for ls in search_space:
-        condx= [x for _, x in con.AllConditional.items() if x[0] in ls.var_name and x[1] in ls.var_name]
+        if con!=None:
+            condx= [x for _, x in con.AllConditional.items() if x[0] in ls.var_name and x[1] in ls.var_name]
+        else:
+            condx=[]
         if(len(condx)<1):
             hOpt = dict()
             varname = ls.var_name
@@ -90,57 +93,76 @@ def SubToHyperopt(search_space: list, con: ConditionalSpace, prefix='value'):
     for root in lsRootNode:
         root'''
 def OrginalToHyperopt(search_space: SearchSpace, con: ConditionalSpace, prefix='value'):
-    lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb = [], [], [], [], []
-    sp = search_space._hyperparameters
-    var_names = [x for x, _ in search_space._hyperparameter_idx.items()]
-    lsParents = []
-    for i, c in con.AllConditional.items():
-        if ([[c[1], c[2]], c[0]] not in lsParentName):
-            childvalue = sp[c[0]].bounds
-            lsParentName.append([[c[1], tuple(c[2])], c[0]])
-    lsRootNode = list(np.unique(np.array([xp[0] for xp, xc in lsParentName])))
-    lsChildNode = [x for _, x in lsParentName]
-    lsOneNode = [x for x in sp if x not in (lsRootNode + lsChildNode)]
-    if (len(lsOneNode) > 0):
-        for x in lsOneNode:
-            # print(x)
-            itemValues = sp[x].bounds[0]
-            lsParentName.append([[x, itemValues], None])
-    for vName in lsRootNode:
-        itemValues = sp[vName].bounds[0]
-        #print(vName, itemValues)
-        itemThisNode = [x[1] for x, _ in lsParentName if x[0] == vName]
-        item_noCons = []
-        if (len(itemThisNode) > 0):
-            itemThisNode2 = []
-            for item in itemThisNode:
-                itemThisNode2 += item
-            item_noCons = [x for x in itemValues if x not in itemThisNode2]
-            #print(itemThisNode2)
-        if (len(item_noCons) > 0):
-            if (len(item_noCons) < 2):
-                #print('+++', vName)
-                lsParentName.append([[vName, tuple(item_noCons)], None])
-            else:
-                #print('---', vName)
-                lsParentName.append([[vName, tuple(item_noCons)], None])
-    finaldict = dict()
-    lsr = []
-    for x in [x for x, _ in lsParentName if x[0] not in [x for _, x in lsParentName]]:
-        if (x not in lsr):
-            #print(x)
-            lsr.append(x)
-            xxx = _xxx(x[0], x[0], x[1], None, lsParentName, sp,prefix)
-            if (x[0] not in finaldict.keys()):
-                finaldict.update(xxx)
-            else:
-                # print(xxx)
-                finaldict[x[0]].append(xxx[x[0]][0])
-    finasp=_format(finaldict,None,None,sp,prefix)
-    if(len(finasp)>1):
-        jointsp = hp.choice('rootxxxx', [finasp])
+    if con != None:
+        condx = [x for _, x in con.AllConditional.items() if x[0] in search_space.var_name
+                 and x[1] in search_space.var_name]
     else:
-        jointsp=finasp
+        condx = []
+    if (len(condx) < 1):
+        hOpt=dict()
+        ls=search_space._hyperparameters
+        for varname,x in ls.items():
+            if (isinstance(x,NominalSpace)):  # Categorical
+                hOpt[varname] = hp.choice(varname,x.bounds[0])
+            elif (isinstance(x,ContinuousSpace)):  ##real number
+                hOpt[varname] = hp.uniform(varname, float(x.bounds[0][0]), float(x.bounds[0][1]))
+            elif (isinstance(x,OrdinalSpace)):  ##interge
+                hOpt[varname] = hp.choice(varname, range(int(x.bounds[0][0]), int(x.bounds[0][1])))
+
+        # print('lstparams.append(cs)')
+        jointsp=hOpt
+    else:
+        lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb = [], [], [], [], []
+        sp = search_space._hyperparameters
+        var_names = [x for x, _ in search_space._hyperparameter_idx.items()]
+        lsParents = []
+        for i, c in con.AllConditional.items():
+            if ([[c[1], c[2]], c[0]] not in lsParentName):
+                childvalue = sp[c[0]].bounds
+                lsParentName.append([[c[1], tuple(c[2])], c[0]])
+        lsRootNode = list(np.unique(np.array([xp[0] for xp, xc in lsParentName])))
+        lsChildNode = [x for _, x in lsParentName]
+        lsOneNode = [x for x in sp if x not in (lsRootNode + lsChildNode)]
+        if (len(lsOneNode) > 0):
+            for x in lsOneNode:
+                # print(x)
+                itemValues = sp[x].bounds[0]
+                lsParentName.append([[x, itemValues], None])
+        for vName in lsRootNode:
+            itemValues = sp[vName].bounds[0]
+            #print(vName, itemValues)
+            itemThisNode = [x[1] for x, _ in lsParentName if x[0] == vName]
+            item_noCons = []
+            if (len(itemThisNode) > 0):
+                itemThisNode2 = []
+                for item in itemThisNode:
+                    itemThisNode2 += item
+                item_noCons = [x for x in itemValues if x not in itemThisNode2]
+                #print(itemThisNode2)
+            if (len(item_noCons) > 0):
+                if (len(item_noCons) < 2):
+                    #print('+++', vName)
+                    lsParentName.append([[vName, tuple(item_noCons)], None])
+                else:
+                    #print('---', vName)
+                    lsParentName.append([[vName, tuple(item_noCons)], None])
+        finaldict = dict()
+        lsr = []
+        for x in [x for x, _ in lsParentName if x[0] not in [x for _, x in lsParentName]]:
+            if (x not in lsr):
+                #print(x)
+                lsr.append(x)
+                xxx = _xxx(x[0], x[0], x[1], None, lsParentName, sp,prefix)
+                if (x[0] not in finaldict.keys()):
+                    finaldict.update(xxx)
+                else:
+                    # print(xxx)
+                    finaldict[x[0]].append(xxx[x[0]][0])
+        finasp=_format(finaldict,None,None,sp,prefix)
+        if(len(finasp)>1):
+            jointsp = hp.choice('rootxxxx', [finasp])
+        else:
+            jointsp=finasp
     return jointsp
 def _xxx(rootname, node, value, parent, lsParentName,sp,prefix):
     child_hpa, child_node = _getchilds(node, value, lsParentName,sp)

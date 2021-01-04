@@ -74,7 +74,7 @@ class BO4ML(object):
         self.sp_cluster=sp_cluster
         self.isminize=minimize
         #MIP-EGO:parameter
-        if (len(conditional.conditional)<1):
+        if (conditional==None):
             conditional=None
         #self.orgSearchSpace=search_space
         #self.orgConditional=conditional

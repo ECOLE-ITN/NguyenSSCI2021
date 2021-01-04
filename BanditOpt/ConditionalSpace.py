@@ -34,7 +34,7 @@ class ConditionalSpace(object):
             self._addAllConditional(child, parent, parent_value)
         #list of conditional for treezation only
         if (isRoot==None):
-            if (child.var_name[0] in [x[0] for i,x in self.conditional.items()]):
+            if (parent.var_name[0] in [x[0] for i,x in self.conditional.items()]):
                 isRoot=False
             else:
                 isRoot=True
@@ -58,7 +58,6 @@ class ConditionalSpace(object):
     def _addConditional(self, child: SearchSpace = None, parent: SearchSpace = None, parent_value=None, isRoot=True) -> None:
         if not isinstance(parent_value, (list, tuple)):
             parent_value=list([parent_value])
-        keyname = str(child.var_name[0]) + '_' + str(parent.var_name[0])
 
         #if its parent has parent, add this child to all parents of its parent
         if(parent.var_name[0] in [x[0] for _,x in self.conditional.items()]):
@@ -72,6 +71,7 @@ class ConditionalSpace(object):
                 else:
                     self.conditional[keyname]=[child.var_name[0],x[1],x[2]]
         if(isRoot==True):
+            keyname = str(child.var_name[0]) + '_' + str(parent.var_name[0])
             self.conditional[keyname] = [child.var_name[0], parent.var_name[0], parent_value]
         #else:
             #self.conditional[str(child.var_name[0]) + '_' + str(parent.var_name[0]) + '_' + "".join(parent_value)] = [

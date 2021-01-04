@@ -159,6 +159,8 @@ def rebuild(hyperparameter):
 
 
 def formatCandidate(self, data):
+    if self._conditional==None:
+        return data
     lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb, var_names = [], [], [], [], [], []
     var_names=self.var_names
     for i, con in self._conditional.conditional.items():
