@@ -11,7 +11,7 @@ from Component.BayesOpt import RandomForest
 from Component.BayesOpt import ContinuousSpace,OrdinalSpace,NominalSpace,SearchSpace
 from BanditOpt.Forbidden import Forbidden
 from BanditOpt.HyperoptConverter import SubToHyperopt, OrginalToHyperopt
-from BanditOpt import tpe
+from Component.mHyperopt import tpe, Trials
 class BO4ML(object):
     def __init__(self, search_space: ConfigSpace,
                  obj_func,#surrogate=None,
@@ -55,7 +55,7 @@ class BO4ML(object):
                  logger=None,
                  hpo_max_eval=None,
                  hpo_prefix='value',
-                 hpo_algo= tpe,
+                 hpo_algo= tpe.suggest,
                  hpo_trials= None,
                  hpo_pass_expr_memo_ctrl = None,
                  hpo_verbose = 0,

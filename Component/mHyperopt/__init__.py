@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import hyperopt
 #from hyperopt.pyll.stochastic import sample
 from hyperopt import fmin,  hp, STATUS_OK, Trials
