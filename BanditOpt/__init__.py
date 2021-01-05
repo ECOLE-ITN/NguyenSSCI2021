@@ -13,8 +13,8 @@ from .BO4ML import BO4ML
 from Component import BayesOpt
 from Component.BayesOpt import NominalSpace, ContinuousSpace, OrdinalSpace, SearchSpace
 from Component.BayesOpt import Surrogate, InfillCriteria
-from Component.mHyperopt import hp, fmin, tpe, rand, Trials, STATUS_OK
+from Component.mHyperopt import hp, fmin, tpe,anneal, atpe, rand, Trials, STATUS_OK
 
 __all__ = ['BO4ML', 'BayesOpt', 'ConditionalSpace', 'ConfigSpace', 'NominalSpace', 'ContinuousSpace', 'OrdinalSpace',
            'Forbidden', 'InfillCriteria', 'Surrogate', 'SearchSpace', 'hp', 'fmin', 'tpe', 'rand', 'Trials',
-           'STATUS_OK']
+           'STATUS_OK', 'anneal', 'atpe']

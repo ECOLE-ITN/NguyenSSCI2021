@@ -68,7 +68,7 @@ def SubToHyperopt(search_space: list, con: ConditionalSpace, prefix='value'):
             for x in [x for x, _ in lsParentName if x[0] not in [x for _, x in lsParentName]]:
                 if (x not in lsr):
                     lsr.append(x)
-                    xxx = _xxxsingle(x[0], x[0], x[1], None,prefix, lsParentName, sp)
+                    xxx = _xxxsingle(x[0], x[0], x[1], None,prefix, lsParentName, sp, con)
                     if (x[0] not in finaldict.keys()):
                         finaldict.update(xxx)
                     else:
@@ -94,8 +94,7 @@ def SubToHyperopt(search_space: list, con: ConditionalSpace, prefix='value'):
         root'''
 def OrginalToHyperopt(search_space: SearchSpace, con: ConditionalSpace, prefix='value'):
     if con != None:
-        condx = [x for _, x in con.AllConditional.items() if x[0] in search_space.var_name
-                 and x[1] in search_space.var_name]
+        condx = [x for _, x in con.AllConditional.items()]
     else:
         condx = []
     if (len(condx) < 1):
@@ -241,7 +240,7 @@ def _format(node,alg,parent, sp, prefix):
         elif(isinstance(sp[alg],OrdinalSpace)):
             thisnode[bkalg]=hp.choice(bkparam, range(int(node[0]),int(node[1])))
     return thisnode
-def _xxxsingle(rootname, node, value, parent, prefix, lsParentName,sp):
+def _xxxsingle(rootname, node, value, parent, prefix, lsParentName,sp, con):
     child_hpa, child_node = _getchilds_single(node, value, lsParentName,sp)
     thisnode=dict()
     isExist=False
@@ -252,7 +251,8 @@ def _xxxsingle(rootname, node, value, parent, prefix, lsParentName,sp):
             hpa, _ = _getchilds_single(child[0],child[1], lsParentName,sp)
             childnode=dict()
             if(len(hpa)>0):
-                childnode=_xxxsingle(rootname, child[0],child[1],node,prefix, lsParentName,sp)
+                childnode=_xxxsingle(rootname, child[0],child[1],node,prefix,
+                                     lsParentName,sp, con)
             else:
                 if(child[0] in thisnode[node][0].keys()):
                     childnode[prefix]=child[1]
@@ -271,7 +271,10 @@ def _xxxsingle(rootname, node, value, parent, prefix, lsParentName,sp):
         if(len([x for x,_ in lsParentName if x[0]==node])>1):
             thisnode[node]=[{prefix:value}]
         else:
-            thisnode[node]=value
+            if(len([x[2] for _,x in con.conditional.items() if x[1]==node])>0):
+                thisnode[node] = [{prefix: value}]
+            else:
+                thisnode[node]=value
     return thisnode
 def _getchilds_single(node, value,lsParentName,sp):
     child_node=[]
@@ -321,9 +324,9 @@ def _formatsingle(node,alg,parent, sp,productspace, prefix='value'):
             typex='O'
         if (typex=='N'):
             thisnode[bkalg]=hp.choice(bkparam,node)
-        elif(typex=='O'):
+        elif(typex=='C'):
             thisnode[bkalg]=hp.uniform(bkparam,float(node[0]),float(node[1]))
-        elif(typex=='N'):
+        elif(typex=='O'):
             thisnode[bkalg]=hp.choice(bkparam, range(int(node[0]),int(node[1])))
     return thisnode
 if __name__ == '__main__':

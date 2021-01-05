@@ -220,6 +220,7 @@ class BO4ML(object):
                 self.opt[sp_id] = MIP.BayesOpt(**kwargs)
 
             #funcType=type(BO.BayesOpt.pre_eval_check)
+            xopt, fopt, stop_dict, ieval_count = self.opt[sp_id].run()
             #self.opt[sp_id].pre_eval_check = funcType(ext.check_configuration,self.opt[sp_id],BO.BayesOpt)
             try:
                 xopt, fopt, stop_dict, ieval_count = self.opt[sp_id].run()
