@@ -118,6 +118,7 @@ class BO4ML(object):
             self.HPO['return_argmin']=hpo_return_argmin
             self.HPO['max_queue_len']=hpo_max_queue_len
             self.HPO['show_progressbar']=hpo_show_progressbar
+            self.HPO['eval_count']=0
         else:
             self.MIP = {}
             if n_init_sample!=0:

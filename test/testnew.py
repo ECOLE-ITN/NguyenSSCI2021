@@ -6,7 +6,8 @@ from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
-
+from BanditOpt.HyperoptConverter import OrginalToHyperopt
+#from hyperopt import hp, tpe, atpe, STATUS_OK, Trials, fmin
 
 def adapt_smo(datasetStr, randomstate, isNOSMO, Max_PCA_Component, min_Percent):
     cs = ConfigSpace()
@@ -136,20 +137,47 @@ def adapt_smo(datasetStr, randomstate, isNOSMO, Max_PCA_Component, min_Percent):
     cs.add_multiparameter([reg_param, store_covariance, tol_qua])
     con.addMutilConditional([reg_param, store_covariance, tol_qua], alg_name, ['Quadratic'])
     return cs, con
+iris = datasets.load_iris()
+X = iris.data
+y = iris.target
 def new_obj(params):
     print(params)
-    loss=np.random.uniform(0,1)
+    FeaturePre = params['FeaturePrepocessing']
+    FeaturePreName = FeaturePre['value']
+    FeParams = {}
+    loss = np.random.uniform(0.6, 1)
+    if (FeaturePreName == 'SelectPercentile'):
+        from sklearn.feature_selection import SelectPercentile, chi2, f_classif, f_regression, mutual_info_classif, \
+            SelectKBest, SelectFpr, SelectFdr, SelectFwe, GenericUnivariateSelect
+        score_func = FeaturePre['score_func']
+        if (score_func == 'chi2'):
+            score_func = chi2
+        elif (score_func == 'f_classif'):
+            score_func = f_classif
+        elif (score_func == 'f_regression'):
+            score_func = f_regression
+        elif (score_func == 'mutual_info_classif'):
+            score_func = mutual_info_classif
+        FeParams['percentile'] = FeaturePre['percentile']
+        transformer = SelectPercentile(score_func=score_func, **FeParams)
+    if (FeaturePreName == 'SelectPercentile'):
+        Xtr = transformer.fit_transform(X, y)
+        loss=np.random.uniform(0,0.3)
     return loss
-cs,con= adapt_smo('car', 18, False, 6, 33)
+cs,con= adapt_smo('car', 18, False, 256, 0)
 #opt = BO4ML(cs, new_obj, conditional=con,forbidden=None, max_eval=20, verbose=False, n_job=1, n_point=1,
  #           n_init_sample=3,SearchType="Bandit")
-from Component.mHyperopt import tpe, rand, Trials,anneal
-randomstate,dataset,HPOalg,method,SearchType=27,'car','hyperopt','tpe','NoBandit'
-
-suggest = anneal.suggest
+from Component.mHyperopt import tpe, rand, Trials,anneal, atpe
+randomstate,dataset,HPOalg,method,SearchType=18,'car','hyperopt','atpe','Bandit'
+trials= Trials
+suggest = rand.suggest
 #opt = BO4ML(cs, new_obj, forbidden=None, conditional=con, SearchType="Bandit",
    #         HPOopitmizer='hyperopt', max_eval=30,hpo_algo=suggest, hpo_show_progressbar=True)
 opt = BO4ML(cs, new_obj, forbidden=None, conditional=con, SearchType=SearchType,minimize=True,
-                HPOopitmizer=HPOalg, max_eval=130,hpo_algo=suggest,random_seed=None)
+                HPOopitmizer=HPOalg, max_eval=500,hpo_trials=trials, hpo_show_progressbar=False,hpo_algo=suggest,random_seed=None)
 xopt, fopt, _, eval_count = opt.run()
 print(fopt)
+
+
+#space=OrginalToHyperopt(search_space=cs,con=con)
+#best = fmin(new_obj, space, algo=atpe.suggest, max_evals=100)

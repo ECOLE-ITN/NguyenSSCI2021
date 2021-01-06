@@ -13,6 +13,7 @@ class HyperOpt(object):
         xcatch= [x['loss'] for x in self.trials.results]
         self.fopt = min(xcatch)
         self.ieval_count=len(xcatch)
+        self.eval_count =self.ieval_count
         return self.fmin,self.fopt,None, self.ieval_count
     def AddBudget_run(self,add_eval, round_id=1):
         self.max_evals += add_eval

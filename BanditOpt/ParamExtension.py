@@ -406,3 +406,51 @@ def BayesOpt_tell(self, X, func_vals, warm_start=False):
     if not warm_start:
         self.iter_count += 1
         self.hist_f.append(self.fopt)
+
+####HYPEROPT####
+import math
+import random
+#Fix bug of TPE: https://github.com/hyperopt/hyperopt/issues/768
+def chooseRandomValueForParameter(self, parameter):
+    if parameter.config.get("mode", "uniform") == "uniform":
+        minVal = parameter.config["min"]
+        maxVal = parameter.config["max"]
+
+        if parameter.config.get("scaling", "linear") == "logarithmic":
+            minVal = math.log(minVal)
+            maxVal = math.log(maxVal)
+
+        value = random.uniform(minVal, maxVal)
+
+        if parameter.config.get("scaling", "linear") == "logarithmic":
+            value = math.exp(value)
+
+        if "rounding" in parameter.config:
+            value = (
+                    round(value / parameter.config["rounding"])
+                    * parameter.config["rounding"]
+            )
+    elif parameter.config.get("mode", "uniform") == "normal":
+        meanVal = parameter.config["mean"]
+        stddevVal = parameter.config["stddev"]
+
+        if parameter.config.get("scaling", "linear") == "logarithmic":
+            meanVal = math.log(meanVal)
+            stddevVal = math.log(stddevVal)
+
+        value = random.gauss(meanVal, stddevVal)
+
+        if parameter.config.get("scaling", "linear") == "logarithmic":
+            value = math.exp(value)
+
+        if "rounding" in parameter.config:
+            value = (
+                    round(value / parameter.config["rounding"])
+                    * parameter.config["rounding"]
+            )
+    elif parameter.config.get("mode", "uniform") == "randint":
+        min = parameter.config["min"]
+        max = parameter.config["max"]-1
+        value = random.randint(min, max)
+
+    return value
