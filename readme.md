@@ -2,13 +2,14 @@
 # Hyperparameter optimization for Machine learning 
 
 Copyright (C) 2019-2021 [ECOLE Project](https://ecole-itn.eu/), [NACO Group](https://naco.liacs.nl/)
+
 ###Contact us
 
 Duc Anh Nguyen
 
 Email:d-dot-a-dot-nguyen-at-liacs-dot-leidenuniv-dot-nl
 
-[website](http://hyperparameter.ml)
+Website: [hyperparameter.ml](http://hyperparameter.ml)
 ## Installation
 ### Requirements
 
