@@ -3,7 +3,7 @@
 
 Copyright (C) 2019-2021 [ECOLE Project](https://ecole-itn.eu/), [NACO Group](https://naco.liacs.nl/)
 
-###Contact us
+### Contact us
 
 Duc Anh Nguyen
 
