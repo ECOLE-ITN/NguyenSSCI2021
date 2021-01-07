@@ -5,11 +5,11 @@ Copyright (C) 2019-2021 [ECOLE Project](https://ecole-itn.eu/), [NACO Group](htt
 
 ### Contact us
 
-Mr. Duc Anh Nguyen
+Duc Anh Nguyen
 
 Email:d-dot-a-dot-nguyen-at-liacs-dot-leidenuniv-dot-nl
 
-[Project website](http://hyperparameter.ml)
+Website: [hyperparameter.ml](http://hyperparameter.ml)
 ## Installation
 ### Requirements
 
