@@ -142,11 +142,9 @@ X = iris.data
 y = iris.target
 def new_obj(params):
     print(params)
-    FeaturePre = params['FeaturePrepocessing']
-    FeaturePreName = FeaturePre['value']
-    FeParams = {}
-    loss = np.random.uniform(0.6, 1)
-    if (FeaturePreName == 'SelectPercentile'):
+
+    loss = np.random.uniform(0, 1)
+    '''if (FeaturePreName == 'SelectPercentile'):
         from sklearn.feature_selection import SelectPercentile, chi2, f_classif, f_regression, mutual_info_classif, \
             SelectKBest, SelectFpr, SelectFdr, SelectFwe, GenericUnivariateSelect
         score_func = FeaturePre['score_func']
@@ -162,19 +160,22 @@ def new_obj(params):
         transformer = SelectPercentile(score_func=score_func, **FeParams)
     if (FeaturePreName == 'SelectPercentile'):
         Xtr = transformer.fit_transform(X, y)
-        loss=np.random.uniform(0,0.3)
+        loss=np.random.uniform(0,0.3)'''
     return loss
-cs,con= adapt_smo('car', 18, False, 256, 0)
+#NONE,False,500,0
+#False,256,0
+cs,con= adapt_smo('car', 18, False,256,0)
 #opt = BO4ML(cs, new_obj, conditional=con,forbidden=None, max_eval=20, verbose=False, n_job=1, n_point=1,
  #           n_init_sample=3,SearchType="Bandit")
 from Component.mHyperopt import tpe, rand, Trials,anneal, atpe
-randomstate,dataset,HPOalg,method,SearchType=18,'car','hyperopt','atpe','Bandit'
+randomstate,dataset,HPOalg,method,SearchType=18,'car','hyperopt','atpe','NoBandit'
 trials= Trials
 suggest = rand.suggest
 #opt = BO4ML(cs, new_obj, forbidden=None, conditional=con, SearchType="Bandit",
-   #         HPOopitmizer='hyperopt', max_eval=30,hpo_algo=suggest, hpo_show_progressbar=True)
+ #           HPOopitmizer='MIP', max_eval=300)
 opt = BO4ML(cs, new_obj, forbidden=None, conditional=con, SearchType=SearchType,minimize=True,
-                HPOopitmizer=HPOalg, max_eval=500,hpo_trials=trials, hpo_show_progressbar=False,hpo_algo=suggest,random_seed=None)
+                HPOopitmizer=HPOalg, max_eval=500,hpo_trials=trials, hpo_show_progressbar=False,
+            hpo_algo=suggest,random_seed=None)
 xopt, fopt, _, eval_count = opt.run()
 print(fopt)
 

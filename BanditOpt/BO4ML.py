@@ -286,9 +286,9 @@ class BO4ML(object):
             for cdid, bestloss in lsThisRound:
                 num_races +=1
                 remain_eval = self.max_eval - self.eval_count
-                remain_iter = self.max_iter - self.iter_count
+                #remain_iter = self.max_iter - self.iter_count
                 cd_add_eval = remain_eval
-                cd_add_iter = remain_iter
+                #cd_add_iter = remain_iter
                 # lc_N_value_count= [len(sp.le)]
                 print("previous best loss was:", bestloss, "of CandidateID", cdid)
                 # cdvalue
@@ -299,17 +299,17 @@ class BO4ML(object):
                     self._lsincumbent[cdid] = xopt
                 except Exception as e:
                     self._lsincumbent[cdid] = None
-                    self.opt[cdid].max_iter = self.opt[cdid].iter_count
+                    #self.opt[cdid].max_iter = self.opt[cdid].iter_count
                     self.opt[cdid].max_eval = self.opt[cdid].eval_count
                     fopt = self.opt[cdid].eval_hist[self.opt[cdid].incumbent_id]
-                    cd_add_iter = self.opt[cdid].iter_count - cd_ran_iter
+                    #cd_add_iter = self.opt[cdid].iter_count - cd_ran_iter
                     cd_add_eval = self.opt[cdid].eval_count - cd_ran_eval
                     if (cdid not in errIDs):
                         errIDs.append(cdid)
                     errList.append(cdid)
                     print('BO4ML-ERROR: ==Additional Round==', e)
                 # update infor
-                self.iter_count += cd_add_iter
+                #self.iter_count += cd_add_iter
                 self.eval_count += cd_add_eval
                 self._lsCurrentBest[cdid] = fopt
         # conclusion
@@ -326,8 +326,8 @@ class BO4ML(object):
         return best_incumbent, best_value, lstrials, self.eval_count
 
     def mega_stop(self):
-        if self.iter_count >= self.max_iter:
-            self.stop_dict['max_iter'] = True
+        #if self.iter_count >= self.max_iter:
+        #    self.stop_dict['max_iter'] = True
         if self.eval_count >= self.max_eval:
             self.stop_dict['max_eval'] = True
         return len(self.stop_dict)

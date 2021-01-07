@@ -62,7 +62,7 @@ class BayesOpt(object):
         self.BO._hyperparameters=self.hyperparameters
     def run(self, round_id=0):
         sp_id=self.sp_id
-        #xopt, fitness, stop_dict = self.BO.run()
+        xopt, fitness, stop_dict = self.BO.run()
         try:
             xopt, fitness, stop_dict = self.BO.run()
         except Exception as e:
