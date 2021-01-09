@@ -2,12 +2,12 @@ from setuptools import setup
 
 setup(
     name='BO4ML',
-    version='0.1.0',
+    version='0.1.1',
     packages=['BanditOpt', 'Component', 'Component.BayesOpt','Component.mHyperopt'],
-    url='http://hyperparamter.ml',
+    url='http://hyperparameter.ml',
     license='MIT',
     author='Duc Anh Nguyen, Thomas Bäck',
-    author_email='d.a.nguyen[at]liacs.leidenuniv[dot]nl',
-    description='Machine learning - Hyperparameter optimisation tool (BO4ML upgrade)',
+    author_email='d.a.nguyen@liacs.leidenuniv.nl',
+    description='Divide and conquer strategy for Full model selection (Combined Model selection and Hyperparameter optimisation)',
     #install_requires=['pandas', 'numpy', 'scipy', 'scikit-learn', 'joblib', 'dill','BayesOpt']
 )
