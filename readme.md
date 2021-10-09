@@ -128,7 +128,7 @@ Optimizing ...
 ```python
 
 from BanditOpt.BO4ML import BO4ML
-opt = BO4ML(search_space, new_obj, 
+opt = BO4ML(search_space, obj_func, 
             conditional=con, #conditional 
             #forbidden=forb, #No infeasible space defined in this example
             HPOopitmizer='hyperopt', #use hyperopt
