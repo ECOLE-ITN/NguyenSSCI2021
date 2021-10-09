@@ -5,4 +5,3 @@ hyperopt~=0.2.5
 lightgbm
 pandas~=1.0.5
 sklearn~=0.0
-setuptools~=49.2.0
