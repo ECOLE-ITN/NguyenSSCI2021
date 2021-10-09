@@ -111,7 +111,7 @@ xopt, fopt, listofTrial, eval_count = opt.run()
 print(xopt,fopt)
 #listofTrial: see hyperopt document for ``trails''
 ```
-##Cite
+## Cite
 
 Duc Anh Nguyen, Anna V. Kononova, Stefan Menzel, Bernhard Sendhoff and Thomas Bäck. Efficient AutoML via Combinational Sampling. IEEE Symposium Series on Computational Intelligence (IEEE SSCI 2021)
 
