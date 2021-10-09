@@ -1,0 +1,8 @@
+pandas
+numpy
+scipy
+scikit-learn
+joblib
+dill
+bayes_optim
+hyperopt

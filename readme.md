@@ -1,5 +1,5 @@
 [![Actions Status](https://api.travis-ci.org/anh05/BO4ML.svg?branch=master)](http://travis-ci.org/anh05/BO4ML)
-# Hyperparameter optimization for Machine learning 
+# BO4AutoML: Bayesian Optimization library Automated machine learning 
 
 Copyright (C) 2019-2021 [ECOLE Project](https://ecole-itn.eu/), [NACO Group](https://naco.liacs.nl/)
 
@@ -13,11 +13,9 @@ Website: [hyperparameter.ml](http://hyperparameter.ml)
 ## Installation
 ### Requirements
 
-As requirements  mentioned in `requirements.txt`, this package requires [bayes-optim](https://github.com/wangronin/Bayesian-Optimization) , 
-and [hyperopt](https://github.com/hyperopt/hyperopt) as build dependencies:
+As requirements  mentioned in `requirements.txt`, [hyperopt](https://github.com/hyperopt/hyperopt) as build dependencies:
 
 ```shell
-pip install bayes-optim
 pip install hyperopt
 ```
 ### Installation
@@ -31,36 +29,36 @@ pip install BO4ML
 Or, take the lastest version from github:
 
 ```shell
-pip install git+https://github.com/anh05/BO4ML.git
+pip install git+https://github.com/ECOLE-ITN/BO4ML.git
 ```
 --
 ```shell
-git clone https://github.com/anh05/BO4ML.git
+git clone https://github.com/ECOLE-ITN/BO4ML.git
 cd BO4ML && python setup.py install --user
 ```
 
 ## Example
 Define a Seach space
 ```python
-from BanditOpt.BO4ML import ConfigSpace, ConditionalSpace, NominalSpace, OrdinalSpace, ContinuousSpace, Forbidden
+from BanditOpt.BO4ML import ConfigSpace, ConditionalSpace, CategoricalParam, IntegerParam, FloatParam, Forbidden
 
 search_space = ConfigSpace()
 # Define Search Space
-alg_namestr = NominalSpace(["SVM", "RF"], "alg_namestr")
+alg_namestr = CategoricalParam(["SVM", "RF"], "alg_namestr")
 # Define Search Space for Support Vector Machine
-kernel = NominalSpace(["linear", "rbf", "poly", "sigmoid"], "kernel")
-C = ContinuousSpace([1e-2, 100], "C")
-degree = OrdinalSpace([1, 5], 'degree')
-coef0 = ContinuousSpace([0.0, 10.0], 'coef0')
-gamma = ContinuousSpace([0, 20], 'gamma')
+kernel = CategoricalParam(["linear", "rbf", "poly", "sigmoid"], "kernel")
+C = FloatParam([1e-2, 100], "C")
+degree = IntegerParam([1, 5], 'degree')
+coef0 = FloatParam([0.0, 10.0], 'coef0')
+gamma = FloatParam([0, 20], 'gamma')
 # Define Search Space for Random Forest
-n_estimators = OrdinalSpace([5, 100], "n_estimators")
-criterion = NominalSpace(["gini", "entropy"], "criterion")
-max_depth = OrdinalSpace([10, 200], "max_depth")
-max_features = NominalSpace(['auto', 'sqrt', 'log2'], "max_features")
+n_estimators = IntegerParam([5, 100], "n_estimators")
+criterion = CategoricalParam(["gini", "entropy"], "criterion")
+max_depth = IntegerParam([10, 200], "max_depth")
+max_features = CategoricalParam(['auto', 'sqrt', 'log2'], "max_features")
 # Add Search space to Configuraion Space
 search_space.add_multiparameter([alg_namestr, kernel, C, degree, coef0, gamma
-                                    , n_estimators, criterion, max_depth, max_features,abc])
+                                    , n_estimators, criterion, max_depth, max_features])
 # Define conditional Space
 con = ConditionalSpace("conditional")
 con.addMutilConditional([kernel, C, degree, coef0, gamma], alg_namestr, "SVM")
@@ -83,6 +81,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 def obj_func(params):
+    global X,y
     params = {k: params[k] for k in params if params[k]}
     classifier = params['alg_namestr']
     params.pop("alg_namestr", None)    
@@ -93,32 +92,7 @@ def obj_func(params):
     mean = cross_val_score(clf, X, y).mean()
     loss = 1 - mean
     return loss
-```
-Optimize with [bayes-optim](https://github.com/wangronin/Bayesian-Optimization):
-```python
-from BanditOpt.BO4ML import BO4ML
-opt = BO4ML(search_space, obj_func, 
-            conditional=con, #conditional 
-            #forbidden=forb, #No infeasible space defined in this example
-            max_eval=20, #number of evaluations
-            n_init_sample=3, #number of init sample 
-            SearchType="Bandit"# SearchType="Bandit"# "Bandit" to use our divide and conquer approach. Otherwise, the original library to be used
-            )                
-```
-Optimize with [bayes-optim](https://github.com/wangronin/Bayesian-Optimization):
-```python
-from BanditOpt.BO4ML import BO4ML
 
-opt = BO4ML(search_space, obj_func, 
-            conditional=con, #conditional 
-            HPOopitmizer='bayes-optim', #use bayes-optim
-            #forbidden=forb, #No infeasible space defined in this example
-            max_eval=50, #number of evaluations
-            n_init_sample=3, #number of init sample 
-            SearchType="Bandit"# set "Bandit" to use our divide and conquer approach. Otherwise, the original library to be used
-            )        
-xopt, fopt, _, eval_count = opt.run()
-print(xopt,fopt)        
 ```
 Optimize with [hyperopt](https://github.com/hyperopt/hyperopt)
 ```python
@@ -131,14 +105,14 @@ opt = BO4ML(search_space, new_obj,
             max_eval=50, #number of evaluations
             n_init_sample=3, #number of init sample 
             hpo_algo=tpe.suggest, #tpe, rand, atpe, anneal
-            SearchType="Bandit"# set "Bandit" to use our divide and conquer approach. Otherwise, the original library to be used
+            SearchType="full"# set "full" to use our sampling approach. Otherwise, the original library to be used
             )
 xopt, fopt, listofTrial, eval_count = opt.run()
 print(xopt,fopt)
 #listofTrial: see hyperopt document for ``trails''
 ```
-#Reference
-to be update
+#Cite
+Duc Anh Nguyen, Anna V. Kononova, Stefan Menzel, Bernhard Sendhoff and Thomas Bäck. Efficient AutoML via Combinational Sampling. IEEE Symposium Series on Computational Intelligence (IEEE SSCI 2021)
 
 ## Acknowledgment
 
