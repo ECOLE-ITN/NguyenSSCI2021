@@ -96,7 +96,7 @@ def obj_func(params):
 ```
 Optimizing ...
 ```python
-from Component.mHyperopt import tpe, rand, atpe, anneal 
+
 from BanditOpt.BO4ML import BO4ML
 opt = BO4ML(search_space, new_obj, 
             conditional=con, #conditional 
@@ -104,7 +104,7 @@ opt = BO4ML(search_space, new_obj,
             HPOopitmizer='hyperopt', #use hyperopt
             max_eval=50, #number of evaluations
             n_init_sample=3, #number of init sample 
-            hpo_algo=tpe.suggest, #tpe, rand, atpe, anneal
+            hpo_algo="tpe", #tpe, rand, atpe, anneal
             SearchType="full"# set "full" to use our sampling approach. Otherwise, the original library to be used
             )
 xopt, fopt, listofTrial, eval_count = opt.run()
