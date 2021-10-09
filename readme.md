@@ -40,11 +40,15 @@ cd BO4ML && python setup.py install --user
 ## Example
 Define a Seach space
 ```python
-from BanditOpt.BO4ML import ConfigSpace, ConditionalSpace, CategoricalParam, IntegerParam, FloatParam, Forbidden
-
+from BanditOpt.BO4ML import ConfigSpace, ConditionalSpace, AlgorithmChoice, CategoricalParam, IntegerParam, FloatParam, Forbidden
 search_space = ConfigSpace()
 # Define Search Space
-alg_namestr = CategoricalParam(["SVM", "RF"], "alg_namestr")
+#1st Operator: Resampling technique
+smo_type = AlgorithmChoice([['NO'], ['SMOTE', 'BorderlineSMOTE']
+            , ['SMOTEENN', 'SMOTETomek'],['NearMiss', 'TomekLinks']], 'resampler')
+#2nd Operator: Classifier
+
+alg_namestr = AlgorithmChoice(["SVM", "RF"], "alg_namestr")
 # Define Search Space for Support Vector Machine
 kernel = CategoricalParam(["linear", "rbf", "poly", "sigmoid"], "kernel")
 C = FloatParam([1e-2, 100], "C")
@@ -57,7 +61,7 @@ criterion = CategoricalParam(["gini", "entropy"], "criterion")
 max_depth = IntegerParam([10, 200], "max_depth")
 max_features = CategoricalParam(['auto', 'sqrt', 'log2'], "max_features")
 # Add Search space to Configuraion Space
-search_space.add_multiparameter([alg_namestr, kernel, C, degree, coef0, gamma
+search_space.add_multiparameter([smo_type,alg_namestr, kernel, C, degree, coef0, gamma
                                     , n_estimators, criterion, max_depth, max_features])
 # Define conditional Space
 con = ConditionalSpace("conditional")
@@ -80,18 +84,44 @@ from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
+from imblearn.over_sampling import SMOTE, BorderlineSMOTE
+from imblearn.under_sampling import NearMiss, TomekLinks
+from imblearn.combine import SMOTEENN, SMOTETomek
+from sklearn.metrics import accuracy_score
+
 def obj_func(params):
     global X,y
     params = {k: params[k] for k in params if params[k]}
+    resampler = params.pop('resampler')
+    if (p_sub_type == 'SMOTE'):
+        smo = SMOTE()
+    elif (p_sub_type == 'BorderlineSMOTE'):
+        smo = BorderlineSMOTE()
+    elif (p_sub_type == 'BorderlineSMOTE'):
+        smo = BorderlineSMOTE()
+    elif (p_sub_type == 'SMOTEENN'):
+        smo = SMOTEENN()
+    elif (p_sub_type == 'SMOTETomek'):
+        smo = SMOTETomek()
+    elif (p_sub_type == 'NearMiss'):
+        smo = NearMiss()
+    elif (p_sub_type == 'TomekLinks'):
+        smo = TomekLinks()
+
     classifier = params['alg_namestr']
     params.pop("alg_namestr", None)    
     if (classifier == 'SVM'):
         clf = SVC(**params)
     elif (classifier == 'RF'):
         clf = RandomForestClassifier(**params)
-    mean = cross_val_score(clf, X, y).mean()
-    loss = 1 - mean
-    return loss
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
+    if (resampler== "NO"):
+        X_smo_train, y_smo_train=X_train, y_train
+    else:
+        X_smo_train, y_smo_train=smo.fit_resample(X_train, y_train)
+    y_test_pred = clf.fit(X_smo_train, y_smo_train).predict(X_test)
+    score = accuracy_score(y_test,y_test_pred)
+    return -score
 
 ```
 Optimizing ...
@@ -100,15 +130,15 @@ Optimizing ...
 from BanditOpt.BO4ML import BO4ML
 opt = BO4ML(search_space, new_obj, 
             conditional=con, #conditional 
-            #forbidden=forb, #No infeasible space defined in this example SearchType="NoBandit",
+            #forbidden=forb, #No infeasible space defined in this example
             HPOopitmizer='hyperopt', #use hyperopt
             max_eval=50, #number of evaluations
             n_init_sample=3, #number of init sample 
             hpo_algo="tpe", #tpe, rand, atpe, anneal
             SearchType="full"# set "full" to use our sampling approach. Otherwise, the original library to be used
             )
-xopt, fopt, listofTrial, eval_count = opt.run()
-print(xopt,fopt)
+best_param, min_value, listofTrial, eval_count = opt.run()
+print(best_param, min_value)
 #listofTrial: see hyperopt document for ``trails''
 ```
 ## Cite
