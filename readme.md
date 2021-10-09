@@ -132,8 +132,8 @@ opt = BO4ML(search_space, new_obj,
             conditional=con, #conditional 
             #forbidden=forb, #No infeasible space defined in this example
             HPOopitmizer='hyperopt', #use hyperopt
-            max_eval=50, #number of evaluations
-            n_init_sample=3, #number of init sample 
+            max_eval=100, #number of evaluations
+            n_init_sample=50, #number of init sample 
             hpo_algo="tpe", #tpe, rand, atpe, anneal
             SearchType="full"# set "full" to use our sampling approach. Otherwise, the original library to be used
             )
