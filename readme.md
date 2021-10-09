@@ -9,7 +9,7 @@ Duc Anh Nguyen
 
 Email:d-dot-a-dot-nguyen-at-liacs-dot-leidenuniv-dot-nl
 
-Website: [hyperparameter.ml](http://hyperparameter.ml)
+Website: [ecole-itn.eu](https://ecole-itn.eu/)
 ## Installation
 ### Requirements
 
