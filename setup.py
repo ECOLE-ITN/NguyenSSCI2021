@@ -1,4 +1,6 @@
 from setuptools import setup
+with open('requirements.txt') as f:
+    requirements = f.read().splitlines()
 
 setup(
     name='BO4ML',
@@ -9,5 +11,5 @@ setup(
     author='Duc Anh Nguyen',
     author_email='d.a.nguyen@liacs.leidenuniv.nl',
     description='BO4AutoML: Bayesian Optimization library AutoML',
-    install_requires=['pandas', 'numpy', 'scipy', 'scikit-learn', 'dill','hyperopt']
+    install_requires=requirements
 )
