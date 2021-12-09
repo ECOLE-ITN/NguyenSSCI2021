@@ -41,8 +41,12 @@ cd BO4ML && python setup.py install --user
 Define a Seach space
 ```python
 from BanditOpt.BO4ML import ConfigSpace, ConditionalSpace, AlgorithmChoice, CategoricalParam, IntegerParam, FloatParam, Forbidden
+seed=1 #Set random_state
 search_space = ConfigSpace()
 # Define Search Space
+#Eandom_seed uses for all operators
+random_seed=CategoricalParam(seed,"random_state")
+
 #1st Operator: Resampling technique
 smo_type = AlgorithmChoice([['NO'], ['SMOTE', 'BorderlineSMOTE']
             , ['SMOTEENN', 'SMOTETomek'],['NearMiss', 'TomekLinks']], 'resampler')
@@ -65,8 +69,9 @@ search_space.add_multiparameter([smo_type,alg_namestr, kernel, C, degree, coef0,
                                     , n_estimators, criterion, max_depth, max_features])
 # Define conditional Space
 con = ConditionalSpace("conditional")
-con.addMutilConditional([kernel, C, degree, coef0, gamma], alg_namestr, "SVM")
-con.addMutilConditional([n_estimators, criterion, max_depth, max_features], alg_namestr, ["RF"])
+con.addMutilConditional([kernel, C, degree, coef0, gamma,random_seed], alg_namestr, "SVM")
+con.addMutilConditional([n_estimators, criterion, max_depth, max_features,random_seed], alg_namestr, ["RF"])
+con.addMutilConditional([random_seed],smo_type,['SMOTE', 'BorderlineSMOTE','SMOTEENN', 'SMOTETomek'])
 # Define infeasible space (if any)
 #forb = Forbidden()
 #forb.addForbidden(abc,["A","C","D"],alg_namestr,"SVM")
@@ -84,61 +89,78 @@ from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
+try:
+    import imblearn
+except ModuleNotFoundError:
+    !pip install imbalanced-learn
 from imblearn.over_sampling import SMOTE, BorderlineSMOTE
 from imblearn.under_sampling import NearMiss, TomekLinks
 from imblearn.combine import SMOTEENN, SMOTETomek
 from sklearn.metrics import accuracy_score
 
-def obj_func(params):
-    global X,y
+def obj_func(params):    
+    global X,y, prefix, seed,iteration  
+    iteration+=1
     params = {k: params[k] for k in params if params[k]}
-    resampler = params.pop('resampler')
-    if (p_sub_type == 'SMOTE'):
-        smo = SMOTE()
-    elif (p_sub_type == 'BorderlineSMOTE'):
-        smo = BorderlineSMOTE()
-    elif (p_sub_type == 'BorderlineSMOTE'):
-        smo = BorderlineSMOTE()
-    elif (p_sub_type == 'SMOTEENN'):
-        smo = SMOTEENN()
-    elif (p_sub_type == 'SMOTETomek'):
-        smo = SMOTETomek()
-    elif (p_sub_type == 'NearMiss'):
-        smo = NearMiss()
-    elif (p_sub_type == 'TomekLinks'):
-        smo = TomekLinks()
-
-    classifier = params['alg_namestr']
-    params.pop("alg_namestr", None)    
+    
+    rparams = params.pop('resampler')
+    resampler=rparams.pop(prefix)
+    if (resampler == 'SMOTE'):
+        smo = SMOTE(**rparams)
+    elif (resampler == 'BorderlineSMOTE'):
+        smo = BorderlineSMOTE(**rparams)
+    elif (resampler == 'BorderlineSMOTE'):
+        smo = BorderlineSMOTE(**rparams)
+    elif (resampler == 'SMOTEENN'):
+        smo = SMOTEENN(**rparams)
+    elif (resampler == 'SMOTETomek'):
+        smo = SMOTETomek(**rparams)
+    elif (resampler == 'NearMiss'):
+        smo = NearMiss(**rparams)
+    elif (resampler == 'TomekLinks'):
+        smo = TomekLinks(**rparams)
+    
+    cparams = params['alg_namestr']
+    params.pop("alg_namestr", None)  
+    classifier=cparams.pop('name')
     if (classifier == 'SVM'):
-        clf = SVC(**params)
+        clf = SVC(**params, random_state=seed)
     elif (classifier == 'RF'):
-        clf = RandomForestClassifier(**params)
+        clf = RandomForestClassifier(**params, random_state=seed)    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
     if (resampler== "NO"):
-        X_smo_train, y_smo_train=X_train, y_train
+            X_smo_train, y_smo_train=X_train, y_train
     else:
         X_smo_train, y_smo_train=smo.fit_resample(X_train, y_train)
     y_test_pred = clf.fit(X_smo_train, y_smo_train).predict(X_test)
+
     score = accuracy_score(y_test,y_test_pred)
-    return -score
+    print('..iteration:',iteration,' -- accuracy_score', score)
+    return {'loss':-score, 'status': STATUS_OK }
 
 ```
 Optimizing ...
 ```python
 
 from BanditOpt.BO4ML import BO4ML
+### Optimizing ...
+prefix='name'
+iteration=0
 opt = BO4ML(search_space, obj_func, 
             conditional=con, #conditional 
+            isFair=True,
             #forbidden=forb, #No infeasible space defined in this example
-            HPOopitmizer='hyperopt', #use hyperopt
-            max_eval=100, #number of evaluations
-            n_init_sample=50, #number of init sample 
+            HPOopitmizer='hpo', #use hyperopt
+            max_eval=50, verbose=True, #number of evaluations
+            n_init_sample=10, #number of init sample 
             hpo_algo="tpe", #tpe, rand, atpe, anneal
-            SearchType="full"# set "full" to use our sampling approach. Otherwise, the original library to be used
+            SearchType="full",# set "full" to use our sampling approach. Otherwise, the original library to be used
+            random_seed=seed,hpo_prefix=prefix,
+            ifAllSolution=10
             )
 best_param, min_value, listofTrial, eval_count = opt.run()
-print(best_param, min_value)
+print('=== best param:',best_param)
+print('=== Best accuracy_score:',-min_value)
 #listofTrial: see hyperopt document for ``trails''
 ```
 ## Cite
