@@ -156,7 +156,7 @@ opt = BO4ML(search_space, obj_func,
             hpo_algo="tpe", #tpe, rand, atpe, anneal
             SearchType="full",# set "full" to use our sampling approach. Otherwise, the original library to be used
             random_seed=seed,hpo_prefix=prefix,
-            ifAllSolution=10
+            ifAllSolution=True
             )
 best_param, min_value, listofTrial, eval_count = opt.run()
 print('=== best param:',best_param)
