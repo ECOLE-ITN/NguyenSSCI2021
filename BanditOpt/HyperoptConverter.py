@@ -82,7 +82,7 @@ def SubToHyperopt(search_space: list, con: ConditionalSpace, prefix='value'):
                             lsParentName.append([[_pName, _newDiff, None], _cName])
                             _Parent_checked.append([_pName, _newDiff, _cName])
 
-                        _samelst+=list(set(_pValues).intersection(_olditem[1]))
+                        _samelst+=sorted(list(set(_pValues).intersection(_olditem[1])))
                         _copieditem = [x for x in _pbounds2 if x[0][1] == _samelst]
                         if len(_samelst)>0and len(_copieditem) > 0:
 
@@ -291,7 +291,7 @@ def ForFullSampling(sp:dict(), con: ConditionalSpace, prefix='value',ifAllSoluti
         _tarr=[_tarr[i] for i in _ibest]
         _t=np.sum(_tarr)
         _p= [math.floor((x/_t)*100000)/100000 for x in _tarr[:-1]]
-        _p.append(1 - sum(_p))        
+        _p.append(1 - sum(_p))
         _choosenstr = _splitStrategy[np.random.choice(len(_splitStrategy),p=_p)]
     else:
         _choosenstr=_splitStrategy[0]
@@ -389,14 +389,6 @@ def ForFullSampling(sp:dict(), con: ConditionalSpace, prefix='value',ifAllSoluti
 
                 if  _isUnEqualBudget == True:
                     _alphax = np.mean(list(_countedByName30.values())) if z30 > 0 else 1
-                    #_alphax = np.percentile(list(_countedByName30.values()), 75) if z30 > 0 else 1
-                    #print(_alphax)
-                    #_alphax=h30_min if z30>0 else 1
-                    #_isAnh=False
-                    #_zRatio=1.5 if np.mean(list(_countedByName70.values())) > _alphax else 1.3
-                    #_zRatio= 1.5 if z70>len(_v)/_n else 2
-                    #_alpha=_zRatio*math.floor((z30/len(_v))* 1000) / 1000
-                    #math.floor((_alpha*(v / (z30+h30)))* 100000) / 100000
                     if z70 > len(_v)/_n:
                         _alpha = 0.35 if _alphax>  np.mean(list(_countedByName70.values()))  else 0.4
                         #_isAnh=True
@@ -422,11 +414,6 @@ def ForFullSampling(sp:dict(), con: ConditionalSpace, prefix='value',ifAllSoluti
                     _p_dict30 = {i: float(0) for i, v in _countedByName30.items()}
                     _p_dict70 = {i: math.floor((v / (z70 + h70)) * 10000) / 10000 for i, v in
                                  _countedByName70.items()}
-
-
-                '''if i == 'resampler':
-                    print(_priGroup, _v)
-                    print(_p_dict70, _p_dict30)'''
             else:
                 _alpha = 0.5 if z30>z70 else 0.3
                 _thishp += int(z70+z30*_alpha)
@@ -446,23 +433,11 @@ def ForFullSampling(sp:dict(), con: ConditionalSpace, prefix='value',ifAllSoluti
                 _lowest70 = min(_countedByName70, key=_countedByName70.get)
                 #_highest70 = max(_countedByName70, key=_countedByName70.get)
                 _p_dict70[_lowest70] = _p_dict70[_lowest70] + _p_remain
-            #else:
-             #   _thishp=1
             if i in _param_ori:
                 continue
             _item=_sp[i]
             _newbounds = []
-
             for bound in _item.bounds:
-                '''if _isUserset:
-                    if isinstance(bound, p_paramrange):
-                        bound.p = _p_item_70*len(bound.bounds) if bound.bounds in v else 0
-                        _newbounds.append(bound)
-                    else:
-                        #_p=_p_dict30[_val] if _val in _v30 else _p_dict70[_val] if _val in _priGroup else 0
-                        _p = _p_item_70 *len(bound.bounds) if bound.bounds in v else 0
-                        _newbounds.append(p_paramrange(bounds=bound.bounds, p=_p, default=None, hType="A"))
-                else:'''
                 if isinstance(bound, p_paramrange):
                     for _val in bound.bounds:
                         x_bound=copy.deepcopy(bound)
@@ -573,10 +548,6 @@ def OrginalToHyperopt(sp: dict(), con: ConditionalSpace, prefix='value', _fair=T
                                 #_Parent_checked.append([_pName, _samelst, _oldchild])
                     if len(_pbounds2) == 0:
                         lsParentName.append([[_pName, _pValues], _cName])
-                    #_Parent_checked.append([_pName, _pValues, _cName])
-            '''if ([[c[1], c[2]], c[0]] not in lsParentName):
-                childvalue = sp[c[0]].allbounds
-                lsParentName.append([[c[1], c[2]], c[0]])'''
         del _copieditem
         lsRootNode = list(np.unique(np.array([xp[0] for xp, xc in lsParentName])))
 
@@ -588,14 +559,11 @@ def OrginalToHyperopt(sp: dict(), con: ConditionalSpace, prefix='value', _fair=T
             for x in lsOneNode:
                 # print(x)
                 itemValues = sp[x].allbounds
-                lsParentName.append([[x, itemValues], None])
-
-        '''for vName in lsRootNode:
-            itemValues = sp[vName].allbounds
-            _Listed =[x for x in lsParentName if x[0][0]==vName]
-
-            for _item in itemValues:
-                _newlsParentName.append()'''
+                if isinstance(sp[x],AlgorithmChoice) and len(itemValues)>1:
+                    for item in itemValues:
+                        lsParentName.append([[x, [item]], None])
+                else:
+                    lsParentName.append([[x, itemValues], None])
         for vName in lsRootNode:
             itemValues = sp[vName].allbounds
             #print(vName, itemValues)
@@ -615,10 +583,6 @@ def OrginalToHyperopt(sp: dict(), con: ConditionalSpace, prefix='value', _fair=T
                         lsParentName.append([[vName, [item]], None])
                 else:
                     lsParentName.append([[vName, item_noCons], None])
-        '''for item in [x for x in lsParentName if len(x[0][1])>1]:
-            for x in sp[item[0][0]].bounds:
-                x.bounds
-            '''
         _temp_lsParentName = []
         if _fair == True:
             for xName in lsRootNode:
@@ -636,40 +600,6 @@ def OrginalToHyperopt(sp: dict(), con: ConditionalSpace, prefix='value', _fair=T
         finaldict = dict()
         lsr = []
         nodes=dict()
-        '''
-        for x in np.unique([x[0] for x,_ in lsParentName]):
-            if len(sp[x].bounds)>1:
-                _bID=0
-                localdict=dict()
-                for _xBounds in sp[x].bounds:
-                    _bID=_bID+1
-                    _bounddict=[]
-                    _lst=[]
-                    for _x in [_x for _x,_ in lsParentName if _x[0]==x and len(set(_x[1]).intersection(_xBounds.bounds)) > 0]:
-                        _z=list(set(_x[1]).intersection(_xBounds.bounds))
-                        if _x not in _lst:
-                            _lst.append(_x)
-                            xxx = _xxx(_x[0], _x[0], _z, None, lsParentName, sp, prefix)
-                            #if _bID not in localdict[_bID].keys():
-                            #    localdict[_bID].update(xxx)
-                            #else:
-                            _bounddict.append(xxx[_x[0]][0])
-                    #localdict.append(_bounddict)
-                    localdict[str(_bID)]=_bounddict
-                finaldict[x]=localdict
-            else:
-                #pass
-                for _x in [_x for _x, _ in lsParentName if _x[0]==x]:
-                #for x in [x for x, _ in lsParentName if x[0] not in [x for _, x in lsParentName]]:
-                    if (_x not in lsr):
-                        #print(x)
-                        lsr.append(_x)
-                        xxx = _xxx(_x[0], _x[0], _x[1], None, lsParentName, sp,prefix)
-                        if (_x[0] not in finaldict.keys()):
-                            finaldict.update(xxx)
-                        else:
-                            # print(xxx)
-                            finaldict[_x[0]].append(xxx[_x[0]][0])'''
         for x in [x for x, _ in lsParentName if x[0] not in [x for _, x in lsParentName]]:
             if (x not in lsr):
                 # print(x)
