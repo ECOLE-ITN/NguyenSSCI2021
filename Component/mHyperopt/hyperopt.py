@@ -13,7 +13,6 @@ class HyperOpt(object):
         self.isError = False
         _org_max_eval = self.fix_max_evals
         _this_max_eval=self.max_evals
-
         try:
             ieval_count = len([x['loss'] for x in self.trials.results if x['status'] == 'ok'])
             eval_count = len([x['loss'] for x in self.trials.results])
@@ -51,7 +50,7 @@ class HyperOpt(object):
                         self.isError = True
                         break
                     if self.isInitMode==False:
-                        print("Hyperopt message: Finish Random Mode => Moving to BO Mode*****")
+                        print("Hyperopt message: Finish Random Mode => Move to BO Mode*****")
                         break
             else:
                 # If not Initial sampling
@@ -90,22 +89,27 @@ class HyperOpt(object):
             except Exception as e:
                 print(e)
                 pass
-        self.fopt = self.trials.best_trial['result']['loss']
         self.eval_count = len([x['loss'] for x in self.trials.results])
-        self.ieval_count=len([x['loss'] for x in self.trials.results if x['status'] == 'ok'])
-        self.eval_hist=self.ieval_count
-        #print('_org_max_eval: ',_org_max_eval,' ieval_count:',ieval_count,' eval_count:',eval_count)
-        if not hasattr(self, 'fmin'):
-            self.fmin={k:v[0] for k,v in self.trials.best_trial['misc']['vals'].items() if len(v)>0}
+        self.ieval_count = len([x['loss'] for x in self.trials.results if x['status'] == 'ok'])
+        self.eval_hist = self.ieval_count
         try:
-            self.fmin_todict = space_eval(self.search_space, {k: v for k, v in self.fmin.items()})
+            self.fopt = self.trials.best_trial['result']['loss']
+            #print('_org_max_eval: ',_org_max_eval,' ieval_count:',ieval_count,' eval_count:',eval_count)
+            if not hasattr(self, 'fmin'):
+                self.fmin={k:v[0] for k,v in self.trials.best_trial['misc']['vals'].items() if len(v)>0}
+            try:
+                self.fmin_todict = space_eval(self.search_space, {k: v for k, v in self.fmin.items()})
+            except Exception as e:
+                self.fmin_todict={}
+                print(e)
+            if hasattr(self,"isParallel"):
+                if self.isParallel==True:
+                    return self.fmin_todict,self.fopt,self.eval_count, self.ieval_count#self.trials, self.sp_id, self.rstate
+
+            return self.fmin_todict,self.fopt,self.eval_count, self.ieval_count
         except Exception as e:
-            self.fmin_todict={}
-            print(e)
-        if hasattr(self,"isParallel"):
-            if self.isParallel==True:
-                return self.fmin_todict,self.fopt,self.eval_count, self.ieval_count#self.trials, self.sp_id, self.rstate
-        return self.fmin_todict,self.fopt,self.eval_count, self.ieval_count
+            print('An Unknown error: ', e)
+            return {}, 1, self.eval_count, self.ieval_count
     def AddBudget_run(self,add_eval, round_id=1):
         try:
             self.fix_max_evals=len([x['loss'] for x in self.trials.results if x['status'] == 'ok'])
