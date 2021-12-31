@@ -1,7 +1,7 @@
 [![Actions Status](https://api.travis-ci.org/anh05/BO4ML.svg?branch=master)](http://travis-ci.org/anh05/BO4ML)
 # BO4AutoML: Bayesian Optimization library Automated machine learning 
 
-Copyright (C) 2019-2021 [ECOLE Project](https://ecole-itn.eu/), [NACO Group](https://naco.liacs.nl/)
+Copyright (C) 2021 [ECOLE Project](https://ecole-itn.eu/), [NACO Group](https://naco.liacs.nl/)
 
 ### Contact us
 

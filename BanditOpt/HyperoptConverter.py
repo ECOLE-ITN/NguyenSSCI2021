@@ -471,7 +471,7 @@ def OrginalToHyperopt(sp: dict(), con: ConditionalSpace, prefix='value', _fair=T
         hOpt=dict()
         #ls=search_space._hyperparameters
         for varname,x in sp.items():
-            hOpt[x.var_name] = _toHyperoptSyntax(x, x.var_name, x.var_name, prefix, None)
+            hOpt[x.var_name] = _toHyperoptSyntax(x, x.var_name, x.var_name, prefix, None, None)
         jointsp=hOpt
     else:
         lsParentName, childList, lsFinalSP, ActiveLst, noCheckForb = [], [], [], [], []
