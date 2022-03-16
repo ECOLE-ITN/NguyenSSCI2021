@@ -1,9 +1,5 @@
 [![DOI](https://zenodo.org/badge/328248499.svg)](https://zenodo.org/badge/latestdoi/328248499)
 
-
-
-
-[![Actions Status](https://api.travis-ci.org/anh05/BO4ML.svg?branch=master)](http://travis-ci.org/anh05/BO4ML)
 # BO4AutoML: Bayesian Optimization library Automated machine learning 
 
 Copyright (C) 2021 [ECOLE Project](https://ecole-itn.eu/), [NACO Group](https://naco.liacs.nl/)
