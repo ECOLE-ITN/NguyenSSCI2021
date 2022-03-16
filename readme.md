@@ -163,12 +163,12 @@ print('=== best param:',best_param)
 print('=== Best accuracy_score:',-min_value)
 #listofTrial: see hyperopt document for ``trails''
 ```
-# Citation
-## Paper Reference
+## Citation
+### Paper Reference
 
 Duc Anh Nguyen, Anna V. Kononova, Stefan Menzel, Bernhard Sendhoff and Thomas Bäck. Efficient AutoML via Combinational Sampling. IEEE Symposium Series on Computational Intelligence (IEEE SSCI 2021)
 
-## BibTex Reference
+### BibTex Reference
 `@INPROCEEDINGS{9660073`,\
   `author={Nguyen, Duc Anh and Kononova, Anna V. and Menzel, Stefan and Sendhoff, Bernhard and Back, Thomas},`\
   `booktitle={2021 IEEE Symposium Series on Computational Intelligence (SSCI)},`\
