@@ -1,3 +1,8 @@
+[![DOI](https://zenodo.org/badge/328248499.svg)](https://zenodo.org/badge/latestdoi/328248499)
+
+
+
+
 [![Actions Status](https://api.travis-ci.org/anh05/BO4ML.svg?branch=master)](http://travis-ci.org/anh05/BO4ML)
 # BO4AutoML: Bayesian Optimization library Automated machine learning 
 
