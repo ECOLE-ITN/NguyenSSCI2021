@@ -29,12 +29,12 @@ pip install BO4ML
 Or, take the lastest version from github:
 
 ```shell
-pip install git+https://github.com/ECOLE-ITN/BO4ML.git
+pip install git+https://github.com/ECOLE-ITN/NguyenSSCI2021.git
 ```
 --
 ```shell
-git clone https://github.com/ECOLE-ITN/BO4ML.git
-cd BO4ML && python setup.py install --user
+git clone https://github.com/ECOLE-ITN/NguyenSSCI2021.git
+cd NguyenSSCI2021 && python setup.py install --user
 ```
 
 ## Example
