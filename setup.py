@@ -6,13 +6,13 @@ here = path.abspath(path.dirname(__file__))
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with open(path.join(here, 'readme_pypi.md'), encoding='utf-8') as f:
     long_description = f.read()
 setup(
     name='BO4ML',
-    version='0.1',
+    version='0.3.2',
     packages=['BanditOpt', 'Component','Component.mHyperopt'],
-    url='https://github.com/ECOLE-ITN/BO4ML',
+    url='https://github.com/ECOLE-ITN/NguyenSSCI2021',
     license='GPL-3.0 License',
     author='Duc Anh Nguyen',
     author_email='d.a.nguyen@liacs.leidenuniv.nl',

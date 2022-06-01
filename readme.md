@@ -1,6 +1,6 @@
 [![DOI](https://zenodo.org/badge/328248499.svg)](https://zenodo.org/badge/latestdoi/328248499)
 
-# BO4AutoML: Bayesian Optimization library Automated machine learning 
+# BO4ML: Bayesian Optimization library Automated machine learning 
 
 Copyright (C) 2021 [ECOLE Project](https://ecole-itn.eu/), [NACO Group](https://naco.liacs.nl/)
 
@@ -170,13 +170,13 @@ print('=== Best accuracy_score:',-min_value)
 Duc Anh Nguyen, Anna V. Kononova, Stefan Menzel, Bernhard Sendhoff and Thomas Bäck. Efficient AutoML via Combinational Sampling. IEEE Symposium Series on Computational Intelligence (IEEE SSCI 2021)
 
 ### BibTex Reference
-`@INPROCEEDINGS{9660073`,\
-  `author={Nguyen, Duc Anh and Kononova, Anna V. and Menzel, Stefan and Sendhoff, Bernhard and Back, Thomas},`\
-  `booktitle={2021 IEEE Symposium Series on Computational Intelligence (SSCI)},`\
-  `title={Efficient AutoML via Combinational Sampling}, `\
-  `year={2021},`\
-  `pages={01-10},`\
-  `doi={10.1109/SSCI50451.2021.9660073}}`
+    @INPROCEEDINGS{9660073,
+    author={Nguyen, Duc Anh and Kononova, Anna V. and Menzel, Stefan and Sendhoff, Bernhard and Back, Thomas},
+    booktitle={2021 IEEE Symposium Series on Computational Intelligence (SSCI)},
+    title={Efficient AutoML via Combinational Sampling}, `\
+    year={2021},
+    pages={01-10},
+    doi={10.1109/SSCI50451.2021.9660073}}
   
 ## Acknowledgment
 
