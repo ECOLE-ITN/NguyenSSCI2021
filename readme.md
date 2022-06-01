@@ -1,4 +1,5 @@
-[![Actions Status](https://api.travis-ci.org/anh05/BO4ML.svg?branch=master)](http://travis-ci.org/anh05/BO4ML)
+[![DOI](https://zenodo.org/badge/328248499.svg)](https://zenodo.org/badge/latestdoi/328248499)
+
 # BO4AutoML: Bayesian Optimization library Automated machine learning 
 
 Copyright (C) 2021 [ECOLE Project](https://ecole-itn.eu/), [NACO Group](https://naco.liacs.nl/)
@@ -29,12 +30,12 @@ pip install BO4ML
 Or, take the lastest version from github:
 
 ```shell
-pip install git+https://github.com/ECOLE-ITN/BO4ML.git
+pip install git+https://github.com/ECOLE-ITN/NguyenSSCI2021.git
 ```
 --
 ```shell
-git clone https://github.com/ECOLE-ITN/BO4ML.git
-cd BO4ML && python setup.py install --user
+git clone https://github.com/ECOLE-ITN/NguyenSSCI2021.git
+cd NguyenSSCI2021 && python setup.py install --user
 ```
 
 ## Example
@@ -163,10 +164,20 @@ print('=== best param:',best_param)
 print('=== Best accuracy_score:',-min_value)
 #listofTrial: see hyperopt document for ``trails''
 ```
-## Cite
+## Citation
+### Paper Reference
 
 Duc Anh Nguyen, Anna V. Kononova, Stefan Menzel, Bernhard Sendhoff and Thomas Bäck. Efficient AutoML via Combinational Sampling. IEEE Symposium Series on Computational Intelligence (IEEE SSCI 2021)
 
+### BibTex Reference
+`@INPROCEEDINGS{9660073`,\
+  `author={Nguyen, Duc Anh and Kononova, Anna V. and Menzel, Stefan and Sendhoff, Bernhard and Back, Thomas},`\
+  `booktitle={2021 IEEE Symposium Series on Computational Intelligence (SSCI)},`\
+  `title={Efficient AutoML via Combinational Sampling}, `\
+  `year={2021},`\
+  `pages={01-10},`\
+  `doi={10.1109/SSCI50451.2021.9660073}}`
+  
 ## Acknowledgment
 
 This project has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 766186 (ECOLE).
